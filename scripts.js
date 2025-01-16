@@ -388,8 +388,32 @@ function updateProgressBar() {
         progressBar.style.width = `${progress}%`;
     }
 }
-
 function setItemStatus(status) {
+    currentItemStatus = status;
+    
+    // Clear previous selections
+    document.querySelectorAll('.status-btn').forEach(button => {
+        button.classList.remove('active');
+    });
+    
+    // Add active class to selected button
+    const selectedBtn = document.querySelector(`.status-btn[data-status="${status}"]`);
+    if (selectedBtn) {
+        selectedBtn.classList.add('active');
+    }
+    
+    // Update inspection data
+    const item = inspectionItems[currentIndex];
+    if (!currentInspectionData[item.id]) {
+        currentInspectionData[item.id] = {};
+    }
+    currentInspectionData[item.id].status = status;
+    
+    // Validate next button
+    const commentBox = document.getElementById('commentBox');
+    validateNextButton(commentBox?.value?.length || 0, 30, 150);
+}
+/*function setItemStatus(status) {
     currentItemStatus = status;
     const btn = event.currentTarget;
     
@@ -406,7 +430,7 @@ function setItemStatus(status) {
     };
     
     updateCharCount();
-}
+}*/
 
 async function nextItem() {
     const item = inspectionItems[currentIndex];
@@ -449,8 +473,44 @@ function previousItem() {
         showNotification('This is the first item', 'warning');
     }
 }
+async function completeInspection() {
+    const truckId = document.getElementById('truckId').value.trim();
+    
+    // Create inspection record
+    const inspectionRecord = {
+        worker: currentWorker.name,
+        truckId: truckId,
+        date: new Date().toLocaleString(),
+        data: { ...currentInspectionData }
+    };
 
-function completeInspection() {
+    // Add to records array
+    if (!Array.isArray(window.records)) {
+        window.records = [];
+    }
+    window.records.push(inspectionRecord);
+
+    // Save to localStorage
+    try {
+        localStorage.setItem('inspectionRecords', JSON.stringify(window.records));
+    } catch (error) {
+        console.error('Error saving inspection record:', error);
+    }
+
+    // Generate PDF
+    try {
+        await generateInspectionPDF(inspectionRecord);
+        showNotification('Inspection completed and PDF generated', 'success');
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        showNotification('Error generating PDF', 'error');
+    }
+
+    // Show records screen
+    showScreen('recordsScreen');
+    displayRecords();
+}
+/*function completeInspection() {
     const truckId = document.getElementById('truckId').value.trim();
     
     // Create inspection record
@@ -476,7 +536,7 @@ function completeInspection() {
 
     showNotification('Inspection completed successfully', 'success');
     showScreen('recordsScreen');
-}
+}*/
 
 function validateNextButton(charCount, minCharLimit, maxCharLimit) {
     const nextButton = document.getElementById('nextButton');
@@ -577,7 +637,76 @@ async function openCamera() {
 
     input.click();
 }
+// Function to display records
+function displayRecords() {
+    const recordsContainer = document.getElementById('recordsContainer');
+    if (!recordsContainer) return;
+    
+    recordsContainer.innerHTML = '';
+    
+    const records = JSON.parse(localStorage.getItem('inspectionRecords') || '[]');
+    
+    if (records.length === 0) {
+        recordsContainer.innerHTML = `
+            <p>
+                <span data-lang="en">No inspection records found.</span>
+                <span data-lang="es">No se encontraron registros de inspección.</span>
+            </p>
+        `;
+        return;
+    }
 
+    records.forEach((record, index) => {
+        let criticalCount = 0;
+        let warningCount = 0;
+
+        Object.values(record.data).forEach(item => {
+            if (item.status === 'critical') criticalCount++;
+            if (item.status === 'warning') warningCount++;
+        });
+
+        const recordItem = document.createElement('div');
+        recordItem.className = 'record-item';
+
+        recordItem.innerHTML = `
+            <div>
+                <p><strong>${record.worker}</strong></p>
+                <p>${record.truckId} - ${record.date}</p>
+                <div class="record-metadata">
+                    ${criticalCount > 0 ? 
+                        `<span class="record-status status-critical">${criticalCount} Critical</span>` : 
+                        ''}
+                    ${warningCount > 0 ? 
+                        `<span class="record-status status-warning">${warningCount} Warning</span>` : 
+                        ''}
+                </div>
+            </div>
+            <button class="btn" onclick="downloadPDF(${index})">PDF</button>
+        `;
+
+        recordsContainer.appendChild(recordItem);
+    });
+    
+    // Update language display
+    updateLanguage();
+}
+// Initialize the records screen
+function initializeRecordsScreen() {
+    // Add records screen HTML
+    const recordsScreenDiv = document.createElement('div');
+    recordsScreenDiv.innerHTML = recordsScreen;
+    document.body.appendChild(recordsScreenDiv.firstElementChild);
+    
+    // Add styles
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = recordsStyles;
+    document.head.appendChild(styleSheet);
+}
+
+// Call this function when the app initializes
+document.addEventListener('DOMContentLoaded', () => {
+    initializeRecordsScreen();
+});
 async function resizeImage(file, maxWidth = 1280, maxHeight = 960, quality = 0.75) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
