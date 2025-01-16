@@ -70,8 +70,8 @@ function initializeApp() {
         loadSavedData();
         
         // Initialize language and theme
-        initializeLanguage();
-        initializeTheme();
+        //initializeLanguage();
+       // initializeTheme();
         
         // Setup event listeners
         setupEventListeners();
