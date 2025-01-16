@@ -10,17 +10,24 @@ let lastCaptureTime = 0;
 // Configuration Data
 const workers = {
     '1234': { id: '003', name: 'Juan Ramon', password: 'abcd1234', role: 'user', inspections: [], status: 'active' },
-    '5678': { id: '004', name: 'Maria Lopez', password: 'maria5678', role: 'user', inspections: [], status: 'active' },
+    '5678': { id: '004', name: 'Maria Lopez', password: 'maria5678', role: 'user', inspections: [], status: 'inactive' },
     '9876': { id: '005', name: 'Carlos Perez', password: 'carlos9876', role: 'auditor', inspections: [], status: 'active' },
-    '9999': { id: '001', name: 'Admin User', password: 'admin123', role: 'admin', inspections: [], status: 'active' }
+    '4321': { id: '006', name: 'Ana Garcia', password: 'ana4321', role: 'auditor', inspections: [], status: 'inactive' },
+    '9999': { id: '001', name: 'Admin User', password: 'admin123', role: 'admin', inspections: [], status: 'active' },
+    '1111': { id: '007', name: 'Luis Fernandez', password: 'luis1111', role: 'admin', inspections: [], status: 'active' },
+    '2222': { id: '008', name: 'Sofia Martinez', password: 'sofia2222', role: 'admin', inspections: [], status: 'inactive' },
+    '3333': { id: '009', name: 'Pedro Gomez', password: 'pedro3333', role: 'admin', inspections: [], status: 'active' }
 };
 
 const trucks = {
     'T001': { id: 'T001', model: 'Kenworth T680', year: 2020, driver: 'Carlos Perez' },
     'T002': { id: 'T002', model: 'Freightliner Cascadia', year: 2019, driver: 'Ana Lopez' },
-    'T003': { id: 'T003', model: 'Volvo VNL 760', year: 2021, driver: 'Luis Martinez' }
+    'T003': { id: 'T003', model: 'Volvo VNL 760', year: 2021, driver: 'Luis Martinez' },
+    'T004': { id: 'T004', model: 'International LT625', year: 2018, driver: 'Sofia Ramirez' },
+    'T005': { id: 'T005', model: 'Peterbilt 579', year: 2022, driver: 'Miguel Hernandez' }
 };
 
+// Lista de items de inspección
 const inspectionItems = [
     { 
         id: 'tires', 
@@ -30,7 +37,7 @@ const inspectionItems = [
             en: 'Check for proper inflation, no visible damage, and sufficient tread depth.', 
             es: 'Verifique que estén correctamente infladas, sin daños visibles y con suficiente profundidad de dibujo.' 
         },
-        requiredPhotos: 2
+        requiredPhotos: 2  // Se requieren 4 fotos (una por cada llanta)
     },
     { 
         id: 'mirrors', 
@@ -40,7 +47,17 @@ const inspectionItems = [
             en: 'Ensure both mirrors are properly aligned, clean, and free from damage.', 
             es: 'Asegúrese de que ambos espejos estén correctamente alineados, limpios y sin daños.' 
         },
-        requiredPhotos: 0
+        requiredPhotos: 0  // Se requieren 2 fotos (espejo izquierdo y derecho)
+    },
+    { 
+        id: 'license_plates', 
+        name: { en: 'License Plates', es: 'Placas Delantera y Trasera' }, 
+        icon: '🔖', 
+        description: { 
+            en: 'Confirm that both plates are securely attached and clearly visible.', 
+            es: 'Confirme que ambas placas estén firmemente sujetas y sean claramente visibles.' 
+        },
+        requiredPhotos: 0  // Se requieren 2 fotos (placa delantera y trasera)
     },
     { 
         id: 'cleanliness', 
@@ -50,7 +67,37 @@ const inspectionItems = [
             en: 'Ensure the vehicle is clean, both exterior and interior.', 
             es: 'Asegúrese de que el vehículo esté limpio, tanto exterior como interior.' 
         },
-        requiredPhotos: 0
+	requiredPhotos: 0 //unica foto central pasillo
+    },
+    { 
+        id: 'scratches', 
+        name: { en: 'Exterior Scratches', es: 'Rayones del Exterior' }, 
+        icon: '🔍', 
+        description: { 
+            en: 'Check for any visible scratches or dents on the exterior.', 
+            es: 'Verifique si hay rayones o abolladuras visibles en el exterior.' 
+        },
+        requiredPhotos: 0  // Se requieren 3 fotos (lateral izquierdo, derecho y frontal)
+    },
+    { 
+        id: 'headlights_taillights', 
+        name: { en: 'Headlights and Taillights', es: 'Faros Delanteros y Traseros' }, 
+        icon: '💡', 
+        description: { 
+            en: 'Ensure they are not broken or foggy and are functioning properly.', 
+            es: 'Asegúrese de que no estén rotos u opacos y que funcionen correctamente.' 
+        },
+        requiredPhotos: 0  // Se requieren 2 fotos (faros delanteros y traseros)
+    },
+    { 
+        id: 'compartments', 
+        name: { en: 'Compartments', es: 'Gavetas' }, 
+        icon: '🗄️', 
+        description: { 
+            en: 'Check the compartments for cleanliness and general condition.', 
+            es: 'Verifique la limpieza y el estado general de las gavetas.' 
+        },
+        requiredPhotos: 0  // Se requieren 2 fotos (lado izquierdo y derecho)
     }
 ];
 
