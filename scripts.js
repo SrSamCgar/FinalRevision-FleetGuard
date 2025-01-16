@@ -353,8 +353,52 @@ function resetInspection() {
         elements.charCount.textContent = '0/150';
     }
 }
-
 function updateInspectionDisplay() {
+    const item = inspectionItems[currentIndex];
+    if (!item) {
+        console.error('Invalid inspection index');
+        return;
+    }
+
+    // Retrieve current data for this item or set defaults
+    const currentData = currentInspectionData[item.id] || { comment: '', photos: [], status: null };
+
+    // Update UI elements
+    document.getElementById('currentName').textContent = `${item.icon} ${item.name[currentLanguage]}`;
+    document.getElementById('currentDescription').textContent = item.description[currentLanguage];
+
+    // Update comment box
+    const commentBox = document.getElementById('commentBox');
+    if (commentBox) {
+        commentBox.value = currentData.comment || '';
+    }
+    updateCharCount();
+
+    // Update photo preview
+    const photoPreview = document.getElementById('photoPreview');
+    if (photoPreview) {
+        if (currentData.photos?.length > 0) {
+            photoPreview.src = currentData.photos[currentData.photos.length - 1];
+            photoPreview.style.display = 'block';
+        } else {
+            photoPreview.style.display = 'none';
+            photoPreview.src = '';
+        }
+    }
+
+    // Reset all status buttons and highlight the saved one if exists
+    document.querySelectorAll('.status-btn').forEach(button => {
+        button.classList.remove('active');
+        if (button.dataset.status === currentData.status) {
+            button.classList.add('active');
+        }
+    });
+
+    // Validate next button if necessary
+    validateNextButton(currentData.comment?.length || 0, 30, 150);
+}
+
+/*function updateInspectionDisplay() {
     const item = inspectionItems[currentIndex];
     if (!item) {
         console.error('Invalid inspection index');
@@ -388,7 +432,7 @@ function updateInspectionDisplay() {
     });
 
     validateNextButton(currentData.comment?.length || 0, 30, 150);
-}
+}*/
 
 function updateProgressBar() {
     const progressBar = document.getElementById('progressBar');
@@ -397,7 +441,52 @@ function updateProgressBar() {
         progressBar.style.width = `${progress}%`;
     }
 }
-function setItemStatus(status) {
+function setItemStatus(status, event) {
+    // Set the current status
+    currentItemStatus = status;
+
+    // Get the clicked button
+    const btn = event.currentTarget;
+    if (!btn) {
+        console.error('El botón clicado es undefined.');
+        return;
+    }
+
+    // Remove active class from all buttons
+    document.querySelectorAll('.status-btn').forEach(button => {
+        button.classList.remove('active');
+    });
+
+    // Add active class to clicked button
+    btn.classList.add('active');
+
+    // Save item state in currentInspectionData
+    const item = inspectionItems[currentIndex];
+    if (!currentInspectionData[item.id]) {
+        currentInspectionData[item.id] = {};
+    }
+    
+    currentInspectionData[item.id] = {
+        ...currentInspectionData[item.id],
+        status: status,
+        comment: document.getElementById('commentBox').value || '',
+        photo: document.getElementById('photoPreview').src || null
+    };
+
+    // Update character count and validate next button
+    updateCharCount();
+}
+
+// Add event listeners to status buttons
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.status-btn').forEach(button => {
+        button.addEventListener('click', function(event) {
+            const status = this.getAttribute('data-status');
+            setItemStatus(status, event);
+        });
+    });
+});
+/*function setItemStatus(status) {
     currentItemStatus = status;
     
     // Clear previous selections
@@ -421,7 +510,7 @@ function setItemStatus(status) {
     // Validate next button
     const commentBox = document.getElementById('commentBox');
     validateNextButton(commentBox?.value?.length || 0, 30, 150);
-}
+}*/
 function initializeStatusButtons() {
     document.querySelectorAll('.status-btn').forEach(button => {
         button.addEventListener('click', function(e) {
