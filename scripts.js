@@ -302,6 +302,15 @@ function updateLanguage() {
     document.querySelectorAll('[data-lang]').forEach(el => {
         el.style.display = el.getAttribute('data-lang') === currentLanguage ? 'inline' : 'none';
     });
+    
+    // Keep status button visibility
+    document.querySelectorAll('.status-btn span').forEach(span => {
+        if (span.getAttribute('data-lang') === currentLanguage) {
+            span.style.display = 'inline';
+        } else {
+            span.style.display = 'none';
+        }
+    });
 }
 // Inspection Management
 function startInspection() {
@@ -413,6 +422,40 @@ function setItemStatus(status) {
     const commentBox = document.getElementById('commentBox');
     validateNextButton(commentBox?.value?.length || 0, 30, 150);
 }
+function initializeStatusButtons() {
+    document.querySelectorAll('.status-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const status = this.getAttribute('data-status');
+            setItemStatus(status);
+        });
+    });
+}
+/*function setItemStatus(status) {
+    currentItemStatus = status;
+    
+    // Clear previous selections
+    document.querySelectorAll('.status-btn').forEach(button => {
+        button.classList.remove('active');
+    });
+    
+    // Add active class to selected button
+    const selectedBtn = document.querySelector(`.status-btn[data-status="${status}"]`);
+    if (selectedBtn) {
+        selectedBtn.classList.add('active');
+    }
+    
+    // Update inspection data
+    const item = inspectionItems[currentIndex];
+    if (!currentInspectionData[item.id]) {
+        currentInspectionData[item.id] = {};
+    }
+    currentInspectionData[item.id].status = status;
+    
+    // Validate next button
+    const commentBox = document.getElementById('commentBox');
+    validateNextButton(commentBox?.value?.length || 0, 30, 150);
+}*/
 /*function setItemStatus(status) {
     currentItemStatus = status;
     const btn = event.currentTarget;
@@ -1151,7 +1194,19 @@ const CacheManager = {
         }
     }
 };
-
+//document loaders o event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Add styles
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = statusButtonStyles;
+    document.head.appendChild(styleSheet);
+    
+    // Initialize buttons
+    initializeStatusButtons();
+    
+    // Initial language update
+    updateLanguage();
+});
 // Export functions to window
 Object.assign(window, {
     login,
