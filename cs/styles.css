@@ -1,3 +1,37 @@
+/* Records Screen Styles */
+.records-container {
+    margin-top: 20px;
+}
+
+.record-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.record-metadata {
+    display: flex;
+    gap: 10px;
+    margin-top: 5px;
+}
+
+.record-status {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.status-critical {
+    background-color: #fee2e2;
+    color: #dc2626;
+}
+
+.status-warning {
+    background-color: #fef3c7;
+    color: #d97706;
+}
 /* Core Variables */
 :root {
   --primary-color: #3b82f6;
