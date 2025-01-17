@@ -1513,6 +1513,46 @@ async function analyzePhotoWithOpenAI(base64Images) {
     const componentName = item.name[currentLanguage];
 
     if (item.requiredPhotos === 0) {
+        return `Component: ${componentName}\nStatus: No photo analysis required`;
+    }
+
+    try {
+        const responses = await Promise.all(
+            base64Images.map(async (base64Image) => {
+                const response = await fetch('/api/openai', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: componentName,
+                        image: base64Image.split(',')[1] // Base64 sin el prefijo
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (data.refusal) {
+                    return `Refusal: ${data.refusal}`;
+                }
+
+                return data.result;
+            })
+        );
+
+        return responses.join('\n');
+    } catch (error) {
+        console.error('Error analyzing photos:', error);
+        return 'Error analyzing photos';
+    }
+}
+
+/*async function analyzePhotoWithOpenAI(base64Images) {
+    const item = inspectionItems[currentIndex];
+    const componentName = item.name[currentLanguage];
+
+    if (item.requiredPhotos === 0) {
         return [{ component: componentName, status: 'No photo analysis required', issues: [] }];
     }
 
@@ -1566,7 +1606,7 @@ async function analyzePhotoWithOpenAI(base64Images) {
         console.error('Error analyzing photos:', error);
         return [{ component: componentName, status: 'Error', issues: ['Error analyzing photos'] }];
     }
-}
+}*/
 
 /*async function analyzePhotoWithOpenAI(base64Images) {
     const item = inspectionItems[currentIndex];
