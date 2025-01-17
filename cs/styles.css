@@ -1,3 +1,34 @@
+/* Input desde dispositivos Mobiles */
+input, textarea, select {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: text;
+    user-select: text;
+    cursor: text !important;
+}
+
+.input-group {
+    z-index: 2;
+    position: relative;
+}
+
+/* Ensure inputs are clickable on iOS */
+input[type="text"],
+input[type="password"],
+textarea {
+    cursor: text !important;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+/* Fix for iOS zoom on input focus */
+@media screen and (max-width: 768px) {
+    input[type="text"],
+    input[type="password"],
+    textarea {
+        font-size: 16px !important;
+    }
+}
 /*Animaciones de carga mientras procesamos imagenes con IA*/
 .loading-spinner {
     display: none;
