@@ -14,7 +14,10 @@
     .screen.active {
         padding-top: 120px; /* Make room for the floating buttons */
     }
-    
+     .admin-header {
+        margin-left: 50px;
+        padding-right: 10px;
+    }
     .admin-container {
         padding-top: 120px;
     }
@@ -250,6 +253,7 @@ textarea {
     border-bottom: 1px solid var(--border-light);
     position: relative;
     z-index: 1;
+    margin-left: 60px; /* Lo movi para la derecha para no topar con el menu de admin */
 }
 .dark-theme .admin-header {
     background-color: var(--background-dark);
@@ -257,8 +261,7 @@ textarea {
 }
 
 .admin-header .btn-secondary {
-    width: auto;
-    margin: 0;
+    margin-left: auto; /* Add this line */
 }
 /* Styles for language and theme buttons */
 .toggle-btn {
@@ -811,12 +814,12 @@ th, td {
     color: #f3f4f6;
 }
 
-/* Notifications */
+/* Notifications Personalizadas */
 .custom-notification {
     position: fixed;
-    top: 2rem;
+    top: -100%;  /* Change from 2rem to -100% */
     left: 50%;
-    transform: translateX(-50%) translateY(-150%);
+    transform: translateX(-50%) translateY(0);
     padding: 0.75rem 1.5rem;
     border-radius: 8px;
     background: rgba(0, 0, 0, 0.9);
@@ -831,7 +834,7 @@ th, td {
 }
 
 .custom-notification.show {
-    transform: translateX(-50%) translateY(0);
+    transform: translateX(-50%) translateY(calc(100% + 2rem));  /* Updated transform */
 }
 
 .custom-notification.success { 
