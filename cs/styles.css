@@ -1,3 +1,58 @@
+/* New CSS for menu button positioning */
+#menuToggleBtn {
+    position: fixed;
+    left: 20px;
+    top: 20px;
+    z-index: 999;
+    padding: 10px 15px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 20px;
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+}
+
+#menuToggleBtn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+}
+
+/* New CSS for admin sidebar styling */
+#adminSidebar {
+    padding-top: 60px;
+}
+
+#adminSidebar h3 {
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+}
+
+#adminSidebar ul {
+    list-style: none;
+    padding: 0;
+}
+
+#adminSidebar ul li {
+    padding: 15px 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+#adminSidebar ul li:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.dark-theme #adminSidebar ul li:hover {
+    background: var(--primary-dark);
+}
 /* PDF Generation Styles */
 .generating-pdf {
     position: fixed;
