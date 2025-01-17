@@ -1,3 +1,26 @@
+/* New CSS for metrics screen */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-xl);
+}
+
+.metric-card {
+    background: var(--background-light);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-md);
+}
+
+.dark-theme .metric-card {
+    background: #2d2d2d;
+}
+
+.chart-container {
+    height: 300px;
+    margin-top: var(--spacing-md);
+}
 /* New CSS for menu button positioning */
 #menuToggleBtn {
     position: fixed;
