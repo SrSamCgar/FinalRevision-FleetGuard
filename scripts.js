@@ -1087,90 +1087,6 @@ async function analyzePhotoWithOpenAI(base64Images) {
     }
 }
 
-/*async function analyzePhotoWithOpenAI(base64Images) {
-    console.log('Starting analyzePhotoWithOpenAI function...');
-
-    const item = inspectionItems[currentIndex];
-
-    if (!item) {
-        console.error('No current inspection item found!');
-        return 'Error: No current inspection item found';
-    }
-
-    const componentName = item.name[currentLanguage];
-    console.log('Current inspection item:', JSON.stringify(item, null, 2));
-    console.log('Component name:', componentName);
-    console.log('Base64 images count:', base64Images.length);
-
-    // Verificar si el ítem no requiere fotos
-    if (item.requiredPhotos === 0) {
-        console.log(`No photo analysis required for component: ${componentName}`);
-        return `Component: ${componentName}\nStatus: No photo analysis required`;
-    }
-
-    if (!Array.isArray(base64Images) || base64Images.length === 0) {
-        console.error('No images provided for analysis');
-        return `Error: No images provided for analysis for ${componentName}`;
-    }
-
-    try {
-        const responses = await Promise.allSettled(
-            base64Images.map(async (base64Image, index) => {
-                const payload = {
-                    prompt: componentName,
-                    image: base64Image.split(',')[1], // Base64 sin el prefijo
-                };
-
-                console.log(`Payload enviado al backend para imagen ${index + 1}:`, JSON.stringify(payload, null, 2));
-
-                const response = await fetch('/api/openai', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
-                });
-
-                console.log(`Response status for image ${index + 1}:`, response.status);
-
-                if (!response.ok) {
-                    const errorDetails = await response.text();
-                    console.error(`HTTP error for image ${index + 1}:`, response.status, errorDetails);
-                    throw new Error(`HTTP error: ${response.status} - ${errorDetails}`);
-                }
-
-                const data = await response.json();
-                console.log(`Response data for image ${index + 1}:`, JSON.stringify(data, null, 2));
-
-                if (data.refusal) {
-                    console.warn(`Refusal for image ${index + 1}:`, data.refusal);
-                    return `Refusal for image ${index + 1}: ${data.refusal}`;
-                }
-
-                if (data.result?.component && data.result?.status) {
-                    return `Component: ${data.result.component}\nStatus: ${data.result.status}\nIssues: ${data.result.issues?.join(', ') || 'None'}`;
-                } else {
-                    console.error(`Invalid response format for image ${index + 1}:`, JSON.stringify(data, null, 2));
-                    return `Error: Invalid response format for image ${index + 1}`;
-                }
-            })
-        );
-
-        const processedResponses = responses.map((result, index) => {
-            if (result.status === 'fulfilled') {
-                return result.value;
-            } else {
-                console.error(`Error processing image ${index + 1}:`, result.reason);
-                return `Error processing image ${index + 1}: ${result.reason.message}`;
-            }
-        });
-
-        console.log('All responses processed:', JSON.stringify(processedResponses, null, 2));
-        return processedResponses.join('\n');
-    } catch (error) {
-        console.error('Unexpected error analyzing photos:', error);
-        return 'Error analyzing photos';
-    }
-}*/
-
 // Admin Dashboard Functions
 function showAdminDashboard() {
     showScreen('adminScreen');
@@ -1243,7 +1159,12 @@ function showUserManagement() {
     showScreen('userManagementScreen');
     displayUsers();
 }
-
+function showMetrics() {
+    toggleSidebar();
+    showScreen('metricsScreen');
+    // Placeholder for future metrics initialization
+    console.log('Metrics screen shown - ready for future implementation');
+}
 function displayUsers() {
     const tableBody = document.getElementById('userTableBody');
     if (!tableBody) return;
