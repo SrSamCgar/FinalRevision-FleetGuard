@@ -297,6 +297,17 @@ function toggleTheme() {
     currentTheme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
     localStorage.setItem('preferredTheme', currentTheme);
 }
+// New functions for settings
+function updateDefaultLanguage(lang) {
+    localStorage.setItem('defaultLanguage', lang);
+    showNotification('Default language updated', 'success');
+}
+
+function updateThemePreference(theme) {
+    localStorage.setItem('defaultTheme', theme);
+    document.body.classList.toggle('dark-theme', theme === 'dark');
+    showNotification('Theme preference updated', 'success');
+}
 
 function updateLanguage() {
     document.querySelectorAll('[data-lang]').forEach(el => {
@@ -311,6 +322,18 @@ function updateLanguage() {
             span.style.display = 'none';
         }
     });
+}
+// Add to your existing showSettings function
+function showSettings() {
+    toggleSidebar();
+    showScreen('settingsScreen');
+    
+    // Load saved preferences
+    const savedLang = localStorage.getItem('defaultLanguage') || 'en';
+    const savedTheme = localStorage.getItem('defaultTheme') || 'light';
+    
+    document.getElementById('defaultLanguage').value = savedLang;
+    document.getElementById('themePreference').value = savedTheme;
 }
 // Inspection Management
 function startInspection() {
@@ -1280,7 +1303,13 @@ function showNotification(message, type = 'success') {
         notification.classList.remove('show');
     }, 3000);
 }
-
+// New function for handling back to login
+function backToLogin() {
+    if (confirm('Are you sure you want to logout?')) {
+        currentWorker = null;
+        showScreen('loginScreen');
+    }
+}
 function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
