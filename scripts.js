@@ -605,7 +605,150 @@ function previousItem() {
         showNotification('This is the first item', 'warning');
     }
 }
+function generateInspectionPDF(inspection) {
+    const { jsPDF } = window.jspdf;
+    if (!jsPDF) {
+        console.error('jsPDF library not loaded');
+        showNotification('Error: PDF generation library not available', 'error');
+        return;
+    }
+
+    try {
+        const doc = new jsPDF();
+
+        // Header with styling
+        doc.setFillColor(59, 130, 246);
+        doc.rect(0, 0, doc.internal.pageSize.getWidth(), 30, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(20);
+        doc.text('FleetGuard Inspection Report', 20, 20);
+
+        // Reset text color for body
+        doc.setTextColor(0, 0, 0);
+        let y = 40;
+        doc.setFontSize(12);
+
+        // Basic Info Section
+        const truck = trucks[inspection.truckId];
+        const basicInfo = [
+            `Inspector: ${inspection.worker}`,
+            `Vehicle ID: ${inspection.truckId}`,
+            `Model: ${truck ? truck.model : 'N/A'}`,
+            `Year: ${truck ? truck.year : 'N/A'}`,
+            `Date: ${inspection.date}`
+        ];
+
+        basicInfo.forEach(info => {
+            doc.text(info, 20, y);
+            y += 10;
+        });
+        y += 10;
+
+        // Inspection Items Section
+        Object.entries(inspection.data).forEach(([key, value]) => {
+            const item = inspectionItems.find(i => i.id === key);
+            if (!item) return;
+
+            // New page check
+            if (y > doc.internal.pageSize.getHeight() - 60) {
+                doc.addPage();
+                y = 20;
+            }
+
+            // Item Header
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${item.name[currentLanguage]} - Status: ${value.status.toUpperCase()}`, 20, y);
+            y += 10;
+
+            // Item Details
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+
+            // Comments
+            if (value.comment) {
+                const commentLines = doc.splitTextToSize(`Comments: ${value.comment}`, 170);
+                doc.text(commentLines, 20, y);
+                y += commentLines.length * 6;
+            }
+
+            // AI Analysis
+            if (value.aiAnalysis) {
+                const aiLines = doc.splitTextToSize(`AI Analysis: ${value.aiAnalysis}`, 170);
+                doc.text(aiLines, 20, y);
+                y += aiLines.length * 6;
+            }
+
+            // Photos
+            if (value.photos && value.photos.length > 0) {
+                try {
+                    value.photos.forEach((photo, index) => {
+                        if (y + 60 > doc.internal.pageSize.getHeight() - 20) {
+                            doc.addPage();
+                            y = 20;
+                        }
+                        doc.addImage(photo, 'JPEG', 20, y, 50, 50);
+                        y += 60;
+                    });
+                } catch (error) {
+                    console.error('Error adding image to PDF:', error);
+                    doc.text('Error: Unable to add image', 20, y);
+                    y += 10;
+                }
+            }
+
+            y += 10; // Space between items
+        });
+
+        // Footer
+        const timestamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
+        doc.setFontSize(10);
+        doc.setTextColor(128, 128, 128);
+        doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 
+            doc.internal.pageSize.getHeight() - 10);
+
+        // Save with formatted name
+        doc.save(`FleetGuard_Inspection_${inspection.truckId}_${timestamp}.pdf`);
+        return true;
+
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        showNotification('Error generating PDF report', 'error');
+        return false;
+    }
+}
 async function completeInspection() {
+    const truckId = document.getElementById('truckId').value.trim();
+    
+    // Create inspection record
+    const inspectionRecord = {
+        worker: currentWorker.name,
+        truckId: truckId,
+        date: new Date().toLocaleString(),
+        data: { ...currentInspectionData }
+    };
+
+    // Add to records array
+    if (!Array.isArray(window.records)) {
+        window.records = [];
+    }
+    window.records.push(inspectionRecord);
+
+    // Save to localStorage
+    try {
+        localStorage.setItem('inspectionRecords', JSON.stringify(window.records));
+        await generateInspectionPDF(inspectionRecord);
+        showNotification('Inspection completed and PDF generated', 'success');
+    } catch (error) {
+        console.error('Error completing inspection:', error);
+        showNotification('Error generating PDF', 'error');
+    }
+
+    // Show records screen
+    showScreen('recordsScreen');
+    displayRecords();
+}
+/*async function completeInspection() {
     const truckId = document.getElementById('truckId').value.trim();
     
     // Create inspection record
@@ -641,7 +784,7 @@ async function completeInspection() {
     // Show records screen
     showScreen('recordsScreen');
     displayRecords();
-}
+}*/
 /*function completeInspection() {
     const truckId = document.getElementById('truckId').value.trim();
     
@@ -768,6 +911,17 @@ async function openCamera() {
     });
 
     input.click();
+}
+function downloadPDF(index) {
+    const records = JSON.parse(localStorage.getItem('inspectionRecords') || '[]');
+    const record = records[index];
+    
+    if (!record) {
+        showNotification('Error: Record not found', 'error');
+        return;
+    }
+    
+    generateInspectionPDF(record);
 }
 // Function to display records
 function displayRecords() {
