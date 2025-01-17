@@ -1,3 +1,62 @@
+/*Nuevos estilos para la pantalla de records*/
+.records-controls {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    flex-wrap: wrap;
+}
+
+.search-input, .filter-select {
+    min-height: 40px;
+    padding: 8px 12px;
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--border-light);
+    background-color: var(--background-light);
+}
+
+.dark-theme .search-input,
+.dark-theme .filter-select {
+    background-color: #2d2d2d;
+    border-color: var(--border-dark);
+    color: var(--text-dark);
+}
+
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+}
+
+.record-item {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border-light);
+    align-items: center;
+}
+
+.record-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.record-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.record-timestamp {
+    color: var(--text-light);
+    font-size: 0.9em;
+}
+
+.dark-theme .record-timestamp {
+    color: var(--text-dark);
+}
 /* Input desde dispositivos Mobiles */
 input, textarea, select {
     -webkit-tap-highlight-color: transparent;
