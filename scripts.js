@@ -8,6 +8,41 @@ let currentItemStatus = null;
 let lastCaptureTime = 0;
 let inspectionStartTime = null;
 let inspectionEndTime = null;
+//declarada al inicio para evitar errores
+async function handleImageProcessing(file) {
+    if (!file) {
+        console.error('No file provided');
+        return null;
+    }
+
+    const photoPreview = document.getElementById('photoPreview');
+    const spinner = document.getElementById('imageLoadingSpinner');
+
+    try {
+        if (spinner) spinner.style.display = 'block';
+        if (photoPreview) photoPreview.classList.add('processing');
+
+        // Process and compress the image
+        const processedImage = await compressImage(file);
+
+        // Update UI
+        if (photoPreview) {
+            photoPreview.src = processedImage;
+            photoPreview.style.display = 'block';
+            photoPreview.classList.remove('processing');
+        }
+
+        return processedImage;
+
+    } catch (error) {
+        console.error('Error processing image:', error);
+        showNotification('Error al procesar la imagen', 'error');
+        return null;
+    } finally {
+        if (spinner) spinner.style.display = 'none';
+        if (photoPreview) photoPreview.classList.remove('processing');
+    }
+}
 // Configuration Data
 const workers = {
     '1234': { id: '003', name: 'Juan Ramon', password: 'abcd1234', role: 'user', inspections: [], status: 'active' },
@@ -405,40 +440,7 @@ function updateInspectionDisplay() {
     updateCharCount();
 
     // Update photo preview and compress it
-	async function handleImageProcessing(file) {
-    if (!file) {
-        console.error('No file provided');
-        return null;
-    }
-
-    const photoPreview = document.getElementById('photoPreview');
-    const spinner = document.getElementById('imageLoadingSpinner');
-
-    try {
-        if (spinner) spinner.style.display = 'block';
-        if (photoPreview) photoPreview.classList.add('processing');
-
-        // Process and compress the image
-        const processedImage = await compressImage(file);
-
-        // Update UI
-        if (photoPreview) {
-            photoPreview.src = processedImage;
-            photoPreview.style.display = 'block';
-            photoPreview.classList.remove('processing');
-        }
-
-        return processedImage;
-
-    } catch (error) {
-        console.error('Error processing image:', error);
-        showNotification('Error al procesar la imagen', 'error');
-        return null;
-    } finally {
-        if (spinner) spinner.style.display = 'none';
-        if (photoPreview) photoPreview.classList.remove('processing');
-    }
-}
+	
 	/*async function handleImageProcessing(file) {
     const photoPreview = document.getElementById('photoPreview');
     if (photoPreview) {
