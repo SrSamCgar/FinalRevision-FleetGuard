@@ -38,6 +38,7 @@ export default async function handler(req, res) {
                 ],
                 response_format: {
                     type: 'json_schema',
+                    name: 'analyze_vehicle_component', // Nombre del esquema
                     json_schema: {
                         strict: true,
                         schema: {
