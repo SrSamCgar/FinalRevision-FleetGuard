@@ -1,3 +1,27 @@
+/* Styles for Metrics*/
+.metric-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    text-align: center;
+    margin: 1rem 0;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
+.metric-card h3 {
+    color: var(--text-light);
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.dark-theme .metric-card h3 {
+    color: var(--text-dark);
+}
 /* Styles for the text/descriptions items */
 #currentName {
     font-size: 1.5rem;
