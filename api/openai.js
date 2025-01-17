@@ -16,7 +16,54 @@ export default async function handler(req, res) {
     }
 
     try {
-        console.log('Sending request to OpenAI...');
+        console.log('Preparing request to OpenAI...');
+        
+        // Preparing the payload for OpenAI
+        const payload = {
+            model: 'gpt-4-turbo', // Ensure compatibility with function calls
+            messages: [
+                {
+                    role: 'system',
+                    content: 'You are an AI that analyzes vehicle components.'
+                },
+                {
+                    role: 'user',
+                    content: `Analyze the following vehicle component: ${prompt}`
+                }
+            ],
+            functions: [
+                {
+                    name: "analyze_vehicle_component",
+                    description: "Analyze a vehicle component and return a structured JSON output.",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            component: {
+                                type: "string",
+                                description: "The name of the vehicle component analyzed"
+                            },
+                            status: {
+                                type: "string",
+                                description: "The condition of the component",
+                                enum: ["good", "bad", "unknown"]
+                            },
+                            issues: {
+                                type: "array",
+                                items: {
+                                    type: "string",
+                                    description: "A list of detected issues"
+                                }
+                            }
+                        },
+                        required: ["component", "status"],
+                        additionalProperties: false
+                    }
+                }
+            ],
+            max_tokens: 100
+        };
+
+        console.log('Payload being sent to OpenAI:', JSON.stringify(payload, null, 2));
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
@@ -24,49 +71,7 @@ export default async function handler(req, res) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
             },
-            body: JSON.stringify({
-                model: 'gpt-4o-2024-08-06',
-                messages: [
-                    {
-                        role: 'system',
-                        content: 'You are an AI that analyzes vehicle components.'
-                    },
-                    {
-                        role: 'user',
-                        content: `Analyze the following vehicle component: ${prompt}`
-                    }
-                ],
-                functions: [
-                    {
-                        name: "analyze_vehicle_component",
-                        description: "Analyze a vehicle component and return a structured JSON output.",
-                        parameters: {
-                            type: "object",
-                            properties: {
-                                component: {
-                                    type: "string",
-                                    description: "The name of the vehicle component analyzed"
-                                },
-                                status: {
-                                    type: "string",
-                                    description: "The condition of the component",
-                                    enum: ["good", "bad", "unknown"]
-                                },
-                                issues: {
-                                    type: "array",
-                                    items: {
-                                        type: "string",
-                                        description: "A list of detected issues"
-                                    }
-                                }
-                            },
-                            required: ["component", "status"],
-                            additionalProperties: false
-                        }
-                    }
-                ],
-                max_tokens: 100
-            })
+            body: JSON.stringify(payload)
         });
 
         console.log('OpenAI response status:', response.status);
@@ -80,17 +85,31 @@ export default async function handler(req, res) {
         const data = await response.json();
 
         console.log('Raw response from OpenAI:', data);
-        console.log('Response data content:', JSON.stringify(data))
+
+        // Extracting the structured response
         const structuredResponse = data.choices[0]?.message?.function_call?.arguments;
+
         if (!structuredResponse) {
             console.error('Invalid structured response from OpenAI:', data);
             return res.status(500).json({ error: 'Invalid structured response from OpenAI' });
         }
 
         console.log('Structured Response:', structuredResponse);
-        res.status(200).json({ result: JSON.parse(structuredResponse) });
+
+        // Validate the structured response before returning
+        try {
+            const parsedResponse = JSON.parse(structuredResponse);
+            if (!parsedResponse.component || !parsedResponse.status) {
+                throw new Error('Response missing required fields');
+            }
+            res.status(200).json({ result: parsedResponse });
+        } catch (parseError) {
+            console.error('Error parsing structured response:', parseError);
+            return res.status(500).json({ error: 'Failed to parse structured response', details: parseError.message });
+        }
+
     } catch (error) {
-        console.error('Error in handler:', error);
+        console.error('Unhandled error in handler:', error);
         res.status(500).json({ error: 'Failed to process request', details: error.message });
     }
 }
