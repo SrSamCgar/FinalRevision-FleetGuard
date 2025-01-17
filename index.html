@@ -245,6 +245,16 @@
     <div class="card">
         <h2 class="title">Metrics Dashboard</h2>
         <div class="metrics-grid">
+                    <div class="metric-card">
+                        <h3>Average Inspection Time</h3>
+                        <p class="metric-value" id="averageTimeValue">--</p>
+                            </div>
+                            <div class="metric-card">
+                        <h3>Inspection Times by Inspector</h3>
+                        <div class="chart-container">
+                            <canvas id="inspectionTimesChart"></canvas>
+                        </div>
+                </div>
             <div class="metric-card">
                 <h3>Weekly Inspections</h3>
                 <div id="weeklyInspectionsChart" class="chart-container"></div>
