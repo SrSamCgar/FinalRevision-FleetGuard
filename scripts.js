@@ -838,6 +838,88 @@ async function openCamera() {
     const item = inspectionItems[currentIndex];
     const requiredPhotos = item.requiredPhotos || 0;
 
+    // Si no se requieren fotos, notificar y avanzar al siguiente ítem
+    if (requiredPhotos === 0) {
+        showNotification(`El ítem "${item.name[currentLanguage]}" no requiere fotos.`, 'info');
+        advanceToNextItem();
+        return;
+    }
+
+    // Evitar múltiples aperturas rápidas de la cámara
+    if (Date.now() - lastCaptureTime < 1000) {
+        console.log('Preventing multiple rapid camera opens');
+        return;
+    }
+
+    lastCaptureTime = Date.now();
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.capture = 'environment';
+    input.multiple = true; // Permitir seleccionar múltiples fotos
+
+    input.addEventListener('change', async (event) => {
+        const files = Array.from(event.target.files);
+
+        if (!files.length) {
+            console.log('No se seleccionaron archivos');
+            return;
+        }
+
+        // Asegurarse de inicializar el array de fotos
+        if (!currentInspectionData[item.id]) {
+            currentInspectionData[item.id] = { photos: [] };
+        } else if (!Array.isArray(currentInspectionData[item.id].photos)) {
+            currentInspectionData[item.id].photos = [];
+        }
+
+        for (let file of files) {
+            try {
+                // Validar el tamaño de la imagen
+                if (file.size > 10 * 1024 * 1024) {
+                    showNotification('La imagen es demasiado grande. Máximo 10MB.', 'error');
+                    continue;
+                }
+
+                // Procesar y redimensionar la imagen
+                const resizedImage = await resizeImage(file);
+                currentInspectionData[item.id].photos.push(resizedImage);
+
+                showNotification('Foto cargada exitosamente.', 'success');
+            } catch (error) {
+                console.error('Error al procesar la imagen:', error);
+                showNotification('Error al procesar la imagen.', 'error');
+            }
+        }
+
+        // Mostrar la última foto cargada en la vista previa
+        const photoPreview = document.getElementById('photoPreview');
+        if (photoPreview) {
+            const lastPhoto = currentInspectionData[item.id].photos.slice(-1)[0];
+            photoPreview.src = lastPhoto;
+            photoPreview.style.display = 'block';
+        }
+
+        // Validar si se alcanzó la cantidad de fotos requerida
+        const currentPhotos = currentInspectionData[item.id].photos.length;
+        if (currentPhotos >= requiredPhotos) {
+            showNotification('Se han cargado todas las fotos requeridas.', 'success');
+        } else {
+            showNotification(
+                `Faltan ${requiredPhotos - currentPhotos} fotos.`,
+                'warning'
+            );
+        }
+    });
+
+    input.click();
+}
+
+/*async function openCamera() {
+    const item = inspectionItems[currentIndex];
+    const requiredPhotos = item.requiredPhotos || 0;
+
     // Skip if no photos required
     if (requiredPhotos === 0) {
         showNotification(`No photos required for this item`, 'info');
@@ -911,7 +993,7 @@ async function openCamera() {
     });
 
     input.click();
-}
+}*/
 function downloadPDF(index) {
     const records = JSON.parse(localStorage.getItem('inspectionRecords') || '[]');
     const record = records[index];
