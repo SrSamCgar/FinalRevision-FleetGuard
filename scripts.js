@@ -6,7 +6,8 @@ let currentIndex = 0;
 let currentInspectionData = {};
 let currentItemStatus = null;
 let lastCaptureTime = 0;
-
+let inspectionStartTime = null;
+let inspectionEndTime = null;
 // Configuration Data
 const workers = {
     '1234': { id: '003', name: 'Juan Ramon', password: 'abcd1234', role: 'user', inspections: [], status: 'active' },
@@ -337,6 +338,7 @@ function showSettings() {
 }
 // Inspection Management
 function startInspection() {
+	inspectionStartTime = new Date();
     const truckId = document.getElementById('truckId').value.trim();
 
     if (!trucks[truckId]) {
@@ -706,6 +708,8 @@ function generateInspectionPDF(inspection) {
 }
 
 async function completeInspection() {
+	inspectionEndTime = new Date();
+    const duration = (inspectionEndTime - inspectionStartTime) / 1000; // in seconds
     const truckId = document.getElementById('truckId').value.trim();
     
     // Create inspection record
@@ -713,6 +717,7 @@ async function completeInspection() {
         worker: currentWorker.name,
         truckId: truckId,
         date: new Date().toLocaleString(),
+	duration: duration,
         data: { ...currentInspectionData }
     };
 
