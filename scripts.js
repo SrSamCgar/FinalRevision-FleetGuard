@@ -1521,6 +1521,93 @@ async function analyzePhotoWithOpenAI(base64Images) {
     // Verificar si el ítem no requiere fotos
     if (item.requiredPhotos === 0) {
         console.log(`No photo analysis required for component: ${componentName}`);
+        return [{
+            component: componentName,
+            status: 'No photo analysis required',
+            issues: []
+        }];
+    }
+
+    try {
+        const responses = await Promise.all(
+            base64Images.map(async (base64Image, index) => {
+                // Verificar y agregar prefijo si falta
+                let imageWithPrefix = base64Image;
+                if (!base64Image.startsWith('data:image')) {
+                    console.warn(`Image ${index + 1} is missing prefix. Adding it automatically.`);
+                    imageWithPrefix = `data:image/jpeg;base64,${base64Image}`;
+                }
+
+                console.log('Payload enviado al backend:', {
+                    prompt: componentName,
+                    image: imageWithPrefix.split(',')[1]
+                });
+
+                console.log(`Sending image ${index + 1} to backend...`);
+
+                const response = await fetch('/api/openai', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: componentName,
+                        image: imageWithPrefix.split(',')[1] // Enviar base64 sin prefijo
+                    })
+                });
+
+                console.log(`Response status for image ${index + 1}:`, response.status);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(`HTTP error for image ${index + 1}:`, response.status, errorText);
+                    throw new Error(`HTTP error: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                console.log(`Response data for image ${index + 1}:`, data);
+
+                if (data.refusal) {
+                    console.warn(`Refusal for image ${index + 1}:`, data.refusal);
+                    return {
+                        imageIndex: index + 1,
+                        status: 'Refusal',
+                        details: data.refusal
+                    };
+                }
+
+                return {
+                    imageIndex: index + 1,
+                    status: 'Success',
+                    details: data.result
+                };
+            })
+        );
+
+        console.log('All responses processed successfully:', responses);
+        return responses;
+    } catch (error) {
+        console.error('Error analyzing photos:', error);
+        return [{
+            component: componentName,
+            status: 'Error',
+            issues: [`Error analyzing photos: ${error.message}`]
+        }];
+    }
+}
+
+/*async function analyzePhotoWithOpenAI(base64Images) {
+    console.log('Starting analyzePhotoWithOpenAI function...');
+    console.log('Current inspection item:', inspectionItems[currentIndex]);
+
+    const item = inspectionItems[currentIndex];
+    const componentName = item.name[currentLanguage];
+
+    console.log('Component name:', componentName);
+    console.log('Base64 images count:', base64Images.length);
+
+    // Verificar si el ítem no requiere fotos
+    if (item.requiredPhotos === 0) {
+        console.log(`No photo analysis required for component: ${componentName}`);
         return `Component: ${componentName}\nStatus: No photo analysis required`;
     }
 
@@ -1569,7 +1656,7 @@ async function analyzePhotoWithOpenAI(base64Images) {
         console.error('Error analyzing photos:', error);
         return 'Error analyzing photos';
     }
-}
+}*/
 
 /*async function analyzePhotoWithOpenAI(base64Images) {
     const item = inspectionItems[currentIndex];
