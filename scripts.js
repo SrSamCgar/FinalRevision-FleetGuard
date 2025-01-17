@@ -565,6 +565,86 @@ function initializeStatusButtons() {
 }*/
 async function nextItem() {
     console.log('nextItem fue llamado');
+
+    // Obtener el ítem actual y detalles necesarios
+    const item = inspectionItems[currentIndex];
+    const requiredPhotos = item.requiredPhotos ?? 1; // Fotos requeridas, por defecto 1
+    const currentPhotos = currentInspectionData[item.id]?.photos || []; // Fotos actuales
+    const comment = document.getElementById('commentBox')?.value || ''; // Comentario del inspector
+
+    console.log('Current inspection item:', item);
+    console.log('Required photos:', requiredPhotos);
+    console.log('Current photos count:', currentPhotos.length);
+
+    // Caso especial: Si no se requieren fotos, avanzar directamente
+    if (requiredPhotos === 0) {
+        console.log(`El ítem "${item.name[currentLanguage]}" no requiere fotos, avanzando...`);
+        currentInspectionData[item.id] = {
+            ...currentInspectionData[item.id],
+            comment: comment,
+            status: currentItemStatus,
+            timestamp: new Date().toISOString(),
+            aiComment: 'No se requiere análisis de IA para este ítem.'
+        };
+        advanceToNextItem();
+        return;
+    }
+
+    // Validar si se han cargado las fotos requeridas antes de avanzar
+    if (currentPhotos.length < requiredPhotos) {
+        const missingPhotos = requiredPhotos - currentPhotos.length;
+        console.warn(`Faltan ${missingPhotos} fotos para completar este ítem.`);
+        showNotification(`Faltan ${missingPhotos} fotos para completar este ítem.`, 'error');
+        return;
+    }
+
+    // Guardar los datos del ítem actual
+    currentInspectionData[item.id] = {
+        ...currentInspectionData[item.id],
+        comment: comment,
+        status: currentItemStatus,
+        timestamp: new Date().toISOString()
+    };
+
+    // Procesar las fotos y comentarios con OpenAI si aplica
+    if (currentPhotos.length > 0 && comment.length >= 30) {
+        console.log('Llamando a OpenAI con fotos cargadas y comentario válido.');
+        try {
+            showNotification('Procesando imágenes con OpenAI...');
+
+            // Llamada a la función para analizar fotos
+            const aiComment = await analyzePhotoWithOpenAI(currentPhotos);
+
+            // Guardar el comentario de IA en los datos del ítem actual
+            currentInspectionData[item.id].aiComment = aiComment;
+
+            console.log(`AI Comment added for ${item.name[currentLanguage]}:`, aiComment);
+            showNotification('Análisis de OpenAI completado.');
+        } catch (error) {
+            console.error('Error al procesar con OpenAI:', error);
+            showNotification('Error al procesar las imágenes con OpenAI.', 'error');
+            currentInspectionData[item.id].aiComment = 'Error al procesar las imágenes con OpenAI.';
+        }
+    } else {
+        console.log('No hay suficientes fotos o el comentario es insuficiente, se omite el envío a OpenAI.');
+        currentInspectionData[item.id].aiComment = 'No hay suficientes fotos o comentario válido.';
+    }
+
+    // Avanzar al siguiente ítem o completar la inspección
+    if (currentIndex < inspectionItems.length - 1) {
+        currentIndex++;
+        updateInspectionDisplay();
+        updateProgressBar();
+        currentItemStatus = null; // Reiniciar el estado del ítem actual
+    } else {
+        console.log('Inspección completada.');
+        completeInspection();
+    }
+}
+
+
+/*async function nextItem() {
+    console.log('nextItem fue llamado');
     const item = inspectionItems[currentIndex];
     const requiredPhotos = item.requiredPhotos ?? 1; // Cantidad de fotos requeridas (por defecto 1)
     const currentPhotos = currentInspectionData[item.id]?.photos || [];
@@ -627,7 +707,7 @@ async function nextItem() {
     } else {
         completeInspection();
     }
-}
+}*/
 function advanceToNextItem() {
     if (currentIndex < inspectionItems.length - 1) {
         console.log('Avanzando al siguiente ítem.');
@@ -1521,6 +1601,67 @@ async function analyzePhotoWithOpenAI(base64Images) {
     // Verificar si el ítem no requiere fotos
     if (item.requiredPhotos === 0) {
         console.log(`No photo analysis required for component: ${componentName}`);
+        return `Component: ${componentName}\nStatus: No photo analysis required`;
+    }
+
+    try {
+        const responses = await Promise.all(
+            base64Images.map(async (base64Image, index) => {
+                const payload = {
+                    prompt: componentName,
+                    image: base64Image.split(',')[1] // Base64 sin el prefijo
+                };
+
+                console.log(`Payload enviado al backend para imagen ${index + 1}:`, payload);
+
+                console.log(`Sending image ${index + 1} to backend...`);
+                const response = await fetch('/api/openai', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                console.log(`Response status for image ${index + 1}:`, response.status);
+
+                if (!response.ok) {
+                    const errorDetails = await response.text();
+                    console.error(`HTTP error for image ${index + 1}:`, response.status, errorDetails);
+                    throw new Error(`HTTP error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log(`Response data for image ${index + 1}:`, data);
+
+                if (data.refusal) {
+                    console.warn(`Refusal for image ${index + 1}:`, data.refusal);
+                    return `Refusal: ${data.refusal}`;
+                }
+
+                return data.result; // Asegúrate de que el backend devuelva "result" como esperado
+            })
+        );
+
+        console.log('All responses processed successfully:', responses);
+        return responses.join('\n');
+    } catch (error) {
+        console.error('Error analyzing photos:', error);
+        return 'Error analyzing photos';
+    }
+}
+
+/*async function analyzePhotoWithOpenAI(base64Images) {
+    console.log('Starting analyzePhotoWithOpenAI function...');
+    console.log('Current inspection item:', inspectionItems[currentIndex]);
+
+    const item = inspectionItems[currentIndex];
+    const componentName = item.name[currentLanguage];
+
+    console.log('Component name:', componentName);
+    console.log('Base64 images count:', base64Images.length);
+
+    // Verificar si el ítem no requiere fotos
+    if (item.requiredPhotos === 0) {
+        console.log(`No photo analysis required for component: ${componentName}`);
         return [{
             component: componentName,
             status: 'No photo analysis required',
@@ -1593,7 +1734,7 @@ async function analyzePhotoWithOpenAI(base64Images) {
             issues: [`Error analyzing photos: ${error.message}`]
         }];
     }
-}
+}*/
 
 /*async function analyzePhotoWithOpenAI(base64Images) {
     console.log('Starting analyzePhotoWithOpenAI function...');
