@@ -37,7 +37,7 @@ const inspectionItems = [
             en: 'Check for proper inflation, no visible damage, and sufficient tread depth.', 
             es: 'Verifique que estén correctamente infladas, sin daños visibles y con suficiente profundidad de dibujo.' 
         },
-        requiredPhotos: 2  // Se requieren 4 fotos (una por cada llanta)
+        requiredPhotos: 1  // Se requieren 4 fotos (una por cada llanta)
     },
     { 
         id: 'mirrors', 
