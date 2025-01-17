@@ -1,6 +1,6 @@
 export default async function handler(req, res) {
     console.log('Request received:', req.method);
-    
+
     if (req.method !== 'POST') {
         console.error('Invalid method:', req.method);
         return res.status(405).json({ error: 'Method not allowed' });
@@ -25,7 +25,7 @@ export default async function handler(req, res) {
                 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
             },
             body: JSON.stringify({
-                model: 'gpt-4o-2024-08-06', // Modelo compatible con Structured Outputs
+                model: 'gpt-4o-2024-08-06',
                 messages: [
                     {
                         role: 'system',
@@ -36,36 +36,35 @@ export default async function handler(req, res) {
                         content: `Analyze the following vehicle component: ${prompt}`
                     }
                 ],
-                response_format: {
-                    type: 'json_schema',
-                    name: 'analyze_vehicle_component', // Nombre del esquema
-                    json_schema: {
-                        strict: true,
-                        schema: {
-                            type: 'object',
+                functions: [
+                    {
+                        name: "analyze_vehicle_component",
+                        description: "Analyze a vehicle component and return a structured JSON output.",
+                        parameters: {
+                            type: "object",
                             properties: {
                                 component: {
-                                    type: 'string',
-                                    description: 'The name of the vehicle component analyzed'
+                                    type: "string",
+                                    description: "The name of the vehicle component analyzed"
                                 },
                                 status: {
-                                    type: 'string',
-                                    description: 'The condition of the component',
-                                    enum: ['good', 'bad', 'unknown']
+                                    type: "string",
+                                    description: "The condition of the component",
+                                    enum: ["good", "bad", "unknown"]
                                 },
                                 issues: {
-                                    type: 'array',
+                                    type: "array",
                                     items: {
-                                        type: 'string',
-                                        description: 'A list of detected issues'
+                                        type: "string",
+                                        description: "A list of detected issues"
                                     }
                                 }
                             },
-                            required: ['component', 'status'],
+                            required: ["component", "status"],
                             additionalProperties: false
                         }
                     }
-                },
+                ],
                 max_tokens: 100
             })
         });
@@ -80,23 +79,16 @@ export default async function handler(req, res) {
 
         const data = await response.json();
 
-        // Validar si el modelo rechazó la solicitud
-        const refusal = data.choices[0]?.message?.refusal;
-        if (refusal) {
-            console.warn('OpenAI refusal:', refusal);
-            return res.status(200).json({ refusal });
-        }
+        console.log('Raw response from OpenAI:', data);
 
-        // Extraer y procesar los datos estructurados
-        const structuredResponse = data.choices[0]?.message?.parsed;
-        console.log('Structured Response:', structuredResponse);
-
+        const structuredResponse = data.choices[0]?.message?.function_call?.arguments;
         if (!structuredResponse) {
             console.error('Invalid structured response from OpenAI:', data);
             return res.status(500).json({ error: 'Invalid structured response from OpenAI' });
         }
 
-        res.status(200).json({ result: structuredResponse });
+        console.log('Structured Response:', structuredResponse);
+        res.status(200).json({ result: JSON.parse(structuredResponse) });
     } catch (error) {
         console.error('Error in handler:', error);
         res.status(500).json({ error: 'Failed to process request', details: error.message });
