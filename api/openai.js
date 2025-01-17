@@ -10,6 +10,9 @@ export default async function handler(req, res) {
     }
 
     try {
+        console.log('Prompt:', prompt);
+        console.log('Image (preview):', image.substring(0, 50));
+
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -48,19 +51,18 @@ export default async function handler(req, res) {
 
         const data = await response.json();
 
-        if (response.ok && data.choices.length > 0) {
-            // Convertir el campo arguments a un objeto JSON
+        if (response.ok && data.choices && data.choices.length > 0) {
             const parsedArguments = JSON.parse(data.choices[0].message.function_call.arguments);
 
-            res.status(200).json({
-                result: parsedArguments
-            });
+            console.log('Parsed Arguments:', parsedArguments);
+
+            res.status(200).json({ result: parsedArguments });
         } else {
             console.error('Error en la respuesta de OpenAI:', data);
             res.status(response.status).json({ error: data });
         }
     } catch (error) {
         console.error('Error:', error);
-        res.status(500).json({ error: 'Failed to process request' });
+        res.status(500).json({ error: 'Failed to process request', details: error.message });
     }
 }
