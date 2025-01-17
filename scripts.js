@@ -439,7 +439,7 @@ function updateInspectionDisplay() {
         if (photoPreview) photoPreview.classList.remove('processing');
     }
 }
-	*/async function handleImageProcessing(file) {
+	/*async function handleImageProcessing(file) {
     const photoPreview = document.getElementById('photoPreview');
     if (photoPreview) {
         const spinner = document.getElementById('imageLoadingSpinner');
