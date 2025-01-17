@@ -1,13 +1,34 @@
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
+        return res.status(405).json({ error: 'Método no permitido' });
     }
 
     const { prompt, image } = req.body;
 
     if (!prompt || !image) {
-        return res.status(400).json({ error: 'Prompt and image are required' });
+        return res.status(400).json({ error: 'Se requieren el prompt y la imagen' });
     }
+
+    // Lista de estados predefinidos y problemas estandarizados en español
+    const predefinedConditions = {
+        statuses: [
+            "Condición óptima",
+            "Leve desgaste",
+            "Desgaste moderado",
+            "Requiere reparación menor",
+            "Requiere reparación urgente",
+            "No funcional"
+        ],
+        issues: [
+            "No presenta problemas",
+            "Daño cosmético menor",
+            "Daño estructural",
+            "Problema funcional",
+            "Conexión floja",
+            "Falta de ajuste adecuado",
+            "Acumulación de suciedad"
+        ]
+    };
 
     try {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -20,22 +41,32 @@ export default async function handler(req, res) {
                 model: 'gpt-4-turbo',
                 messages: [
                     {
+                        role: 'system',
+                        content: `Eres una IA que analiza componentes de vehículos basándote en condiciones predefinidas. 
+                                  Siempre devuelve tu análisis utilizando uno de los estados y problemas predefinidos.`
+                    },
+                    {
                         role: 'user',
-                        content: `Analyze the following vehicle component: ${prompt}`,
+                        content: `Analiza el siguiente componente del vehículo basado en estas condiciones predefinidas:
+                                  
+                                  Estados: ${predefinedConditions.statuses.join(', ')}.
+                                  Problemas: ${predefinedConditions.issues.join(', ')}.
+                                  
+                                  Componente: ${prompt}.`
                     }
                 ],
                 functions: [
                     {
                         name: "analyze_vehicle_component",
-                        description: "Analyze a vehicle component and return a structured JSON output.",
+                        description: "Analiza un componente de vehículo y devuelve un resultado estructurado en JSON.",
                         parameters: {
                             type: "object",
                             properties: {
-                                component: { type: "string", description: "The name of the component" },
-                                status: { type: "string", description: "The condition of the component" },
+                                component: { type: "string", description: "El nombre del componente" },
+                                status: { type: "string", description: "El estado del componente", enum: predefinedConditions.statuses },
                                 issues: {
                                     type: "array",
-                                    items: { type: "string", description: "List of detected issues" }
+                                    items: { type: "string", description: "Lista de problemas detectados", enum: predefinedConditions.issues }
                                 }
                             },
                             required: ["component", "status"]
@@ -52,15 +83,26 @@ export default async function handler(req, res) {
             const choice = data.choices[0];
             if (!choice?.message?.function_call?.arguments) {
                 console.error('function_call.arguments no está presente o es inválido:', data);
-                return res.status(500).json({ error: 'Invalid structured response from OpenAI' });
+                return res.status(500).json({ error: 'Respuesta estructurada inválida de OpenAI' });
             }
 
             let parsedArguments;
             try {
                 parsedArguments = JSON.parse(choice.message.function_call.arguments);
             } catch (error) {
-                console.error('Error al parsear arguments:', error);
-                return res.status(500).json({ error: 'Invalid JSON in function_call.arguments' });
+                console.error('Error al analizar los argumentos:', error);
+                return res.status(500).json({ error: 'JSON inválido en function_call.arguments' });
+            }
+
+            // Validar que el status y los issues estén dentro de las condiciones predefinidas
+            if (!predefinedConditions.statuses.includes(parsedArguments.status)) {
+                console.error('Estado inválido recibido:', parsedArguments.status);
+                return res.status(500).json({ error: 'Estado inválido en la respuesta' });
+            }
+
+            if (parsedArguments.issues.some(issue => !predefinedConditions.issues.includes(issue))) {
+                console.error('Problemas inválidos recibidos:', parsedArguments.issues);
+                return res.status(500).json({ error: 'Problemas inválidos en la respuesta' });
             }
 
             res.status(200).json({
@@ -72,6 +114,6 @@ export default async function handler(req, res) {
         }
     } catch (error) {
         console.error('Error:', error);
-        res.status(500).json({ error: 'Failed to process request' });
+        res.status(500).json({ error: 'Error al procesar la solicitud' });
     }
 }
