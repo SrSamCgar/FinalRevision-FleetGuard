@@ -1584,6 +1584,12 @@ function updateMetricsDisplay() {
         averageTimeDisplay.textContent = formatTime(averageTime);
     }
 
+    // Destroy existing chart if it exists
+    const existingChart = Chart.getChart('inspectionTimesChart');
+    if (existingChart) {
+        existingChart.destroy();
+    }
+
     // Create data for the chart
     const chartData = Object.entries(inspectorTimes).map(([inspector, times]) => ({
         inspector,
@@ -1618,6 +1624,72 @@ function updateMetricsDisplay() {
         });
     }
 }
+/*function updateMetricsDisplay() {
+    // Get all inspection records
+    const records = JSON.parse(localStorage.getItem('inspectionRecords') || '[]');
+    
+    // Calculate average inspection time
+    const timesWithDuration = records.filter(record => record.duration);
+    const averageTime = timesWithDuration.length > 0
+        ? timesWithDuration.reduce((acc, curr) => acc + curr.duration, 0) / timesWithDuration.length
+        : 0;
+        
+    // Calculate times by inspector
+    const inspectorTimes = {};
+    timesWithDuration.forEach(record => {
+        if (!inspectorTimes[record.worker]) {
+            inspectorTimes[record.worker] = [];
+        }
+        inspectorTimes[record.worker].push(record.duration);
+    });
+
+    // Format time for display
+    const formatTime = (seconds) => {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = Math.round(seconds % 60);
+        return `${minutes}m ${remainingSeconds}s`;
+    };
+
+    // Update the average time card
+    const averageTimeDisplay = document.getElementById('averageTimeValue');
+    if (averageTimeDisplay) {
+        averageTimeDisplay.textContent = formatTime(averageTime);
+    }
+
+    // Create data for the chart
+    const chartData = Object.entries(inspectorTimes).map(([inspector, times]) => ({
+        inspector,
+        averageTime: times.reduce((acc, curr) => acc + curr, 0) / times.length
+    }));
+
+    // Update the chart
+    const ctx = document.getElementById('inspectionTimesChart');
+    if (ctx && window.Chart) {
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: chartData.map(d => d.inspector),
+                datasets: [{
+                    label: 'Average Inspection Time (seconds)',
+                    data: chartData.map(d => d.averageTime),
+                    backgroundColor: '#3b82f6'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Time (seconds)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+}*/
 function showAddUserForm() {
     const userModal = document.getElementById('userModal');
     const modalTitle = document.getElementById('modalTitle');
