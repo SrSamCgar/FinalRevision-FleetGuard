@@ -303,6 +303,36 @@
         </div>
     </div>
 </div>
+    <!-- New Records Screen HTML -->
+    <div id="recordsScreen" class="screen container">
+    <div class="card">
+        <div class="admin-header">
+            <h2 class="title">
+                <span data-lang="en">Recent Inspections</span>
+                <span data-lang="es">Inspecciones Recientes</span>
+            </h2>
+            <div class="records-controls">
+                <input type="text" id="recordSearchInput" placeholder="Search records..." class="search-input">
+                <select id="recordFilterStatus" class="filter-select">
+                    <option value="all">All Status</option>
+                    <option value="critical">Critical</option>
+                    <option value="warning">Warning</option>
+                    <option value="ok">OK</option>
+                </select>
+                <button class="btn btn-secondary" onclick="exportRecords()">
+                    <span data-lang="en">Export CSV</span>
+                    <span data-lang="es">Exportar CSV</span>
+                </button>
+            </div>
+        </div>
+        <div id="recordsContainer" class="records-container"></div>
+        <div class="pagination-controls">
+            <button id="prevPage" class="btn btn-secondary">←</button>
+            <span id="pageInfo">Page 1 of 1</span>
+            <button id="nextPage" class="btn btn-secondary">→</button>
+        </div>
+    </div>
+</div>
     <!-- Scripts -->
     <script src="scripts.js"></script>
 </body>
