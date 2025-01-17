@@ -73,6 +73,9 @@ export default async function handler(req, res) {
         }
 
         const data = await response.json();
+        // **Log 6: Datos procesados de OpenAI**
+        console.log('Raw response from OpenAI:', data);
+
 
         // Validar si el modelo rechazó la solicitud
         const refusal = data.choices[0]?.message?.refusal;
