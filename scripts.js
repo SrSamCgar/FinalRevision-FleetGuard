@@ -751,6 +751,134 @@ function generateInspectionPDF(inspection) {
                 y += commentLines.length * 6;
             }
 
+            // Photos and Associated AI Comments
+            if (value.photos && value.photos.length > 0) {
+                value.photos.forEach((photo, index) => {
+                    if (y + 70 > doc.internal.pageSize.getHeight() - 20) {
+                        doc.addPage();
+                        y = 20;
+                    }
+                    
+                    // Add Photo
+                    try {
+                        doc.addImage(photo, 'JPEG', 20, y, 50, 50);
+                        y += 55;
+                    } catch (error) {
+                        console.error('Error adding image to PDF:', error);
+                        doc.text('Error: Unable to add image', 20, y);
+                        y += 10;
+                    }
+
+                    // Add AI Comment for the Photo
+                    if (Array.isArray(value.aiAnalysis) && value.aiAnalysis[index]) {
+                        const aiComment = value.aiAnalysis[index];
+                        doc.setFont('helvetica', 'bold');
+                        doc.text(`AI Analysis for Photo ${index + 1}:`, 75, y - 40);
+
+                        doc.setFont('helvetica', 'normal');
+                        doc.text(`Status: ${aiComment.status}`, 75, y - 30);
+
+                        if (aiComment.issues && aiComment.issues.length > 0) {
+                            doc.text('Issues:', 75, y - 20);
+                            aiComment.issues.forEach((issue, issueIndex) => {
+                                const issueLines = doc.splitTextToSize(`• ${issue}`, 100);
+                                doc.text(issueLines, 80, y - 20 + (issueIndex + 1) * 6);
+                            });
+                        }
+                    }
+
+                    y += 10; // Space between photos
+                });
+            }
+
+            y += 10; // Space between items
+        });
+
+        // Footer
+        doc.setFontSize(10);
+        doc.setTextColor(128, 128, 128);
+        doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 
+            doc.internal.pageSize.getHeight() - 10);
+
+        // Save with formatted name
+        const timestamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
+        doc.save(`FleetGuard_Inspection_${inspection.truckId}_${timestamp}.pdf`);
+        return true;
+
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        showNotification('Error generating PDF report', 'error');
+        return false;
+    }
+}
+
+/*function generateInspectionPDF(inspection) {
+    const { jsPDF } = window.jspdf;
+    if (!jsPDF) {
+        console.error('jsPDF library not loaded');
+        showNotification('Error: PDF generation library not available', 'error');
+        return;
+    }
+
+    try {
+        const doc = new jsPDF();
+
+        // Header with styling
+        doc.setFillColor(59, 130, 246);
+        doc.rect(0, 0, doc.internal.pageSize.getWidth(), 30, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(20);
+        doc.text('FleetGuard Inspection Report', 20, 20);
+
+        // Reset text color for body
+        doc.setTextColor(0, 0, 0);
+        let y = 40;
+        doc.setFontSize(12);
+
+        // Basic Info Section
+        const truck = trucks[inspection.truckId];
+        const basicInfo = [
+            `Inspector: ${inspection.worker}`,
+            `Vehicle ID: ${inspection.truckId}`,
+            `Model: ${truck ? truck.model : 'N/A'}`,
+            `Year: ${truck ? truck.year : 'N/A'}`,
+            `Date: ${inspection.date}`
+        ];
+
+        basicInfo.forEach(info => {
+            doc.text(info, 20, y);
+            y += 10;
+        });
+        y += 10;
+
+        // Inspection Items Section
+        Object.entries(inspection.data).forEach(([key, value]) => {
+            const item = inspectionItems.find(i => i.id === key);
+            if (!item) return;
+
+            // New page check
+            if (y > doc.internal.pageSize.getHeight() - 60) {
+                doc.addPage();
+                y = 20;
+            }
+
+            // Item Header
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${item.name[currentLanguage]} - Status: ${value.status.toUpperCase()}`, 20, y);
+            y += 10;
+
+            // Item Details
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+
+            // Comments from Inspector
+            if (value.comment) {
+                const commentLines = doc.splitTextToSize(`Inspector Comments: ${value.comment}`, 170);
+                doc.text(commentLines, 20, y);
+                y += commentLines.length * 6;
+            }
+
             // AI Analysis
             if (value.aiAnalysis) {
                 if (Array.isArray(value.aiAnalysis)) {
@@ -818,7 +946,7 @@ function generateInspectionPDF(inspection) {
         showNotification('Error generating PDF report', 'error');
         return false;
     }
-}
+}*/
 
 /*function generateInspectionPDF(inspection) {
     const { jsPDF } = window.jspdf;
@@ -1380,8 +1508,67 @@ async function resizeImage(file, maxWidth = 1280, maxHeight = 960, quality = 0.7
         reader.readAsDataURL(file);
     });
 }
-
 async function analyzePhotoWithOpenAI(base64Images) {
+    const item = inspectionItems[currentIndex];
+    const componentName = item.name[currentLanguage];
+
+    if (item.requiredPhotos === 0) {
+        return [{ component: componentName, status: 'No photo analysis required', issues: [] }];
+    }
+
+    if (!Array.isArray(base64Images) || base64Images.length === 0) {
+        console.error('No images provided for analysis');
+        return [{ component: componentName, status: 'Error', issues: ['No images provided for analysis'] }];
+    }
+
+    try {
+        const responses = await Promise.allSettled(
+            base64Images.map(async (base64Image, index) => {
+                const base64Content = base64Image.split(',')[1];
+
+                const response = await fetch('https://final-revision-fleet-guard.vercel.app/api/openai', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        prompt: `Analyze the component: ${componentName}`,
+                        image: base64Content
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                return {
+                    imageIndex: index + 1,
+                    status: 'Success',
+                    details: data.result
+                };
+            })
+        );
+
+        return responses.map((result, index) => {
+            if (result.status === 'fulfilled') {
+                return result.value;
+            } else {
+                return {
+                    imageIndex: index + 1,
+                    status: 'Failed',
+                    details: `Error analyzing photo: ${result.reason}`
+                };
+            }
+        });
+
+    } catch (error) {
+        console.error('Error analyzing photos:', error);
+        return [{ component: componentName, status: 'Error', issues: ['Error analyzing photos'] }];
+    }
+}
+
+/*async function analyzePhotoWithOpenAI(base64Images) {
     const item = inspectionItems[currentIndex];
     const componentName = item.name[currentLanguage];
 
@@ -1432,7 +1619,7 @@ async function analyzePhotoWithOpenAI(base64Images) {
         console.error('Error analyzing photos:', error);
         return 'Error analyzing photos';
     }
-}
+}*/
 // Admin Dashboard Functions
 function showAdminDashboard() {
     showScreen('adminScreen');
