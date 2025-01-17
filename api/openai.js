@@ -1,5 +1,7 @@
 export default async function handler(req, res) {
     console.log('Request received:', req.method); // Log para registrar el método de la solicitud
+
+    // Verificar si el método es POST
     if (req.method !== 'POST') {
         console.error('Invalid method:', req.method); // Log del método incorrecto
         return res.status(405).json({ error: 'Method not allowed' });
@@ -9,10 +11,20 @@ export default async function handler(req, res) {
 
     console.log('Request body:', req.body); // Log para inspeccionar el cuerpo de la solicitud
 
+    // Verificar que los campos requeridos estén presentes
     if (!prompt || !image) {
         console.error('Missing required fields:', { prompt, image }); // Log si faltan campos requeridos
         return res.status(400).json({ error: 'Prompt and image are required' });
     }
+
+    // Asegurar que la imagen tenga el prefijo base64 correcto
+    let formattedImage = image;
+    if (!image.startsWith('data:image/')) {
+        console.warn('Missing base64 prefix for image. Adding prefix.');
+        formattedImage = `data:image/jpeg;base64,${image}`;
+    }
+
+    console.log('Formatted Image Preview:', formattedImage.substring(0, 50)); // Log del prefijo base64
 
     try {
         console.log('Sending request to OpenAI...'); // Log antes de enviar la solicitud a OpenAI
@@ -29,6 +41,12 @@ export default async function handler(req, res) {
                     {
                         role: 'user',
                         content: `Analyze the following vehicle component: ${prompt}`,
+                    },
+                    {
+                        type: 'image_url',
+                        image_url: {
+                            url: formattedImage,
+                        }
                     }
                 ],
                 response_format: {
@@ -73,9 +91,6 @@ export default async function handler(req, res) {
         }
 
         const data = await response.json();
-        // **Log 6: Datos procesados de OpenAI**
-        console.log('Raw response from OpenAI:', data);
-
 
         // Validar si el modelo rechazó la solicitud
         const refusal = data.choices[0]?.message?.refusal;
@@ -87,6 +102,7 @@ export default async function handler(req, res) {
         // Extraer y procesar los datos estructurados
         const structuredResponse = data.choices[0]?.message?.parsed;
         console.log('OpenAI structured response raw:', data); // Log del objeto completo devuelto
+
         if (!structuredResponse) {
             console.error('Invalid structured response from OpenAI:', data); // Log si la respuesta es inválida
             return res.status(500).json({ error: 'Invalid structured response from OpenAI' });
