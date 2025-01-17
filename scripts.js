@@ -289,6 +289,10 @@ function resetScreens() {
 // Language and Theme Management
 function toggleLanguage() {
     currentLanguage = currentLanguage === 'en' ? 'es' : 'en';
+    const btnSpans = document.querySelectorAll('#languageToggleBtn span');
+    btnSpans.forEach(span => {
+        span.style.display = span.getAttribute('data-lang') === currentLanguage ? 'inline' : 'none';
+    });
     updateLanguage();
     localStorage.setItem('preferredLanguage', currentLanguage);
 }
@@ -377,6 +381,7 @@ function resetInspection() {
     if (elements.charCount) {
         elements.charCount.textContent = '0/150';
     }
+  cleanupImages();
 }
 function updateInspectionDisplay() {
     const item = inspectionItems[currentIndex];
@@ -400,7 +405,25 @@ function updateInspectionDisplay() {
     updateCharCount();
 
     // Update photo preview
-    const photoPreview = document.getElementById('photoPreview');
+	const photoPreview = document.getElementById('photoPreview');
+		if (photoPreview) {
+		    const spinner = document.getElementById('imageLoadingSpinner');
+		    spinner.style.display = 'block';
+		    photoPreview.classList.add('processing');
+		    
+		    try {
+		        const compressedImage = await compressImage(file);
+		        photoPreview.src = compressedImage;
+		        photoPreview.style.display = 'block';
+		    } catch (error) {
+		        console.error('Error processing image:', error);
+		        showNotification('Error processing image', 'error');
+		    } finally {
+		        spinner.style.display = 'none';
+		        photoPreview.classList.remove('processing');
+		    }
+		}
+    /*const photoPreview = document.getElementById('photoPreview');
     if (photoPreview) {
         if (currentData.photos?.length > 0) {
             photoPreview.src = currentData.photos[currentData.photos.length - 1];
@@ -409,7 +432,7 @@ function updateInspectionDisplay() {
             photoPreview.style.display = 'none';
             photoPreview.src = '';
         }
-    }
+    }*/
 
     // Reset all status buttons and highlight the saved one if exists
     document.querySelectorAll('.status-btn').forEach(button => {
@@ -740,6 +763,7 @@ async function completeInspection() {
     // Show records screen
     showScreen('recordsScreen');
     displayRecords();
+cleanupImages();
 }
 
 function validateNextButton(charCount, minCharLimit, maxCharLimit) {
@@ -868,7 +892,56 @@ async function openCamera() {
 
     input.click();
 }
+async function compressImage(file, maxWidth = 1280, maxHeight = 960, quality = 0.6) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
 
+                if (width > height) {
+                    if (width > maxWidth) {
+                        height *= maxWidth / width;
+                        width = maxWidth;
+                    }
+                } else {
+                    if (height > maxHeight) {
+                        width *= maxHeight / height;
+                        height = maxHeight;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Convert to WebP if supported
+                const mimeType = 'image/webp';
+                const compressedImage = canvas.toDataURL(mimeType, quality);
+                
+                // Clean up
+                canvas.width = 0;
+                canvas.height = 0;
+                URL.revokeObjectURL(img.src);
+                resolve(compressedImage);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function cleanupImages() {
+    const photoPreview = document.getElementById('photoPreview');
+    if (photoPreview) {
+        URL.revokeObjectURL(photoPreview.src);
+        photoPreview.src = '';
+    }
+}
 function downloadPDF(index) {
     const records = JSON.parse(localStorage.getItem('inspectionRecords') || '[]');
     const record = records[index];
