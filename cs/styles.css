@@ -43,17 +43,10 @@
         font-size: 16px !important;
     }
 }
-/*.screen {
+.screen {
     display: none;
     width: 100%;
-    height: 100%;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    min-height: 100vh;
     background-color: var(--background-light);
 }
 .dark-theme .screen {
@@ -61,7 +54,7 @@
 }
 .screen.active {
     display: block;
-}*/
+}
 /*Nuevos estilos para la pantalla de records*/
 .records-controls {
     display: flex;
@@ -565,9 +558,7 @@ textarea {
 html, body {
     height: 100%;
     width: 100%;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     position: relative;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -577,9 +568,8 @@ html, body {
 }
 
 body {
-    position: fixed;
-    width: 100%;
-    height: 100%;
+    margin: 0;
+    padding: 0;
 }
 
 /* Dark Theme */
@@ -599,11 +589,10 @@ body {
 /* Container Layouts */
 .admin-container {
     width: 100%;
-    max-width: 1200px; /* Changed from 600px */
+    max-width: 1200px;
     margin: 0 auto;
     padding: var(--spacing-md);
     min-height: 100vh;
-    padding-bottom: 80px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }
@@ -613,7 +602,6 @@ body {
     margin: 0 auto;
     padding: var(--spacing-md);
     min-height: 100vh;
-    padding-bottom: 80px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }
