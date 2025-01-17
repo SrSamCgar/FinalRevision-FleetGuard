@@ -665,6 +665,142 @@ function generateInspectionPDF(inspection) {
             doc.setFontSize(12);
             doc.setFont('helvetica', 'normal');
 
+            // Comments from Inspector
+            if (value.comment) {
+                const commentLines = doc.splitTextToSize(`Inspector Comments: ${value.comment}`, 170);
+                doc.text(commentLines, 20, y);
+                y += commentLines.length * 6;
+            }
+
+            // AI Analysis
+            if (value.aiAnalysis) {
+                if (Array.isArray(value.aiAnalysis)) {
+                    value.aiAnalysis.forEach((analysis, index) => {
+                        doc.setFont('helvetica', 'bold');
+                        doc.text(`AI Analysis ${index + 1}:`, 20, y);
+                        y += 6;
+
+                        doc.setFont('helvetica', 'normal');
+                        doc.text(`Status: ${analysis.status}`, 30, y);
+                        y += 6;
+
+                        if (analysis.issues && analysis.issues.length > 0) {
+                            doc.text('Issues detected:', 30, y);
+                            y += 6;
+                            analysis.issues.forEach(issue => {
+                                const issueLines = doc.splitTextToSize(`• ${issue}`, 160);
+                                doc.text(issueLines, 35, y);
+                                y += issueLines.length * 6;
+                            });
+                        }
+                        y += 6;
+                    });
+                } else {
+                    const aiLines = doc.splitTextToSize(`AI Analysis: ${value.aiAnalysis}`, 170);
+                    doc.text(aiLines, 20, y);
+                    y += aiLines.length * 6;
+                }
+            }
+
+            // Photos
+            if (value.photos && value.photos.length > 0) {
+                try {
+                    value.photos.forEach((photo, index) => {
+                        if (y + 60 > doc.internal.pageSize.getHeight() - 20) {
+                            doc.addPage();
+                            y = 20;
+                        }
+                        doc.addImage(photo, 'JPEG', 20, y, 50, 50);
+                        y += 60;
+                    });
+                } catch (error) {
+                    console.error('Error adding image to PDF:', error);
+                    doc.text('Error: Unable to add image', 20, y);
+                    y += 10;
+                }
+            }
+
+            y += 10; // Space between items
+        });
+
+        // Footer
+        doc.setFontSize(10);
+        doc.setTextColor(128, 128, 128);
+        doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 
+            doc.internal.pageSize.getHeight() - 10);
+
+        // Save with formatted name
+        const timestamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
+        doc.save(`FleetGuard_Inspection_${inspection.truckId}_${timestamp}.pdf`);
+        return true;
+
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        showNotification('Error generating PDF report', 'error');
+        return false;
+    }
+}
+
+/*function generateInspectionPDF(inspection) {
+    const { jsPDF } = window.jspdf;
+    if (!jsPDF) {
+        console.error('jsPDF library not loaded');
+        showNotification('Error: PDF generation library not available', 'error');
+        return;
+    }
+
+    try {
+        const doc = new jsPDF();
+
+        // Header with styling
+        doc.setFillColor(59, 130, 246);
+        doc.rect(0, 0, doc.internal.pageSize.getWidth(), 30, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(20);
+        doc.text('FleetGuard Inspection Report', 20, 20);
+
+        // Reset text color for body
+        doc.setTextColor(0, 0, 0);
+        let y = 40;
+        doc.setFontSize(12);
+
+        // Basic Info Section
+        const truck = trucks[inspection.truckId];
+        const basicInfo = [
+            `Inspector: ${inspection.worker}`,
+            `Vehicle ID: ${inspection.truckId}`,
+            `Model: ${truck ? truck.model : 'N/A'}`,
+            `Year: ${truck ? truck.year : 'N/A'}`,
+            `Date: ${inspection.date}`
+        ];
+
+        basicInfo.forEach(info => {
+            doc.text(info, 20, y);
+            y += 10;
+        });
+        y += 10;
+
+        // Inspection Items Section
+        Object.entries(inspection.data).forEach(([key, value]) => {
+            const item = inspectionItems.find(i => i.id === key);
+            if (!item) return;
+
+            // New page check
+            if (y > doc.internal.pageSize.getHeight() - 60) {
+                doc.addPage();
+                y = 20;
+            }
+
+            // Item Header
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${item.name[currentLanguage]} - Status: ${value.status.toUpperCase()}`, 20, y);
+            y += 10;
+
+            // Item Details
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+
             // Comments
             if (value.comment) {
                 const commentLines = doc.splitTextToSize(`Comments: ${value.comment}`, 170);
@@ -716,7 +852,7 @@ function generateInspectionPDF(inspection) {
         showNotification('Error generating PDF report', 'error');
         return false;
     }
-}
+}*/
 async function completeInspection() {
     const truckId = document.getElementById('truckId').value.trim();
     
@@ -1122,7 +1258,7 @@ async function resizeImage(file, maxWidth = 1280, maxHeight = 960, quality = 0.7
     });
 }
 
-async function analyzePhotoWithOpenAI(base64Images) {
+/*async function analyzePhotoWithOpenAI(base64Images) {
     const item = inspectionItems[currentIndex];
     const componentName = item.name[currentLanguage];
 
@@ -1173,7 +1309,7 @@ async function analyzePhotoWithOpenAI(base64Images) {
         console.error('Error analyzing photos:', error);
         return 'Error analyzing photos';
     }
-}
+}*/
 // Admin Dashboard Functions
 function showAdminDashboard() {
     showScreen('adminScreen');
