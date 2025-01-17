@@ -615,6 +615,93 @@ async function nextItem() {
             // Llamada a la función para analizar fotos
             const aiComment = await analyzePhotoWithOpenAI(currentPhotos);
 
+            // Validar y formatear el comentario de IA
+            if (Array.isArray(aiComment)) {
+                console.log('AI Comment recibido como array:', aiComment);
+                const formattedAIComment = aiComment.map((comment, index) => `Imagen ${index + 1}: ${comment}`).join('\n');
+                currentInspectionData[item.id].aiComment = formattedAIComment;
+            } else {
+                console.log('AI Comment recibido como string:', aiComment);
+                currentInspectionData[item.id].aiComment = aiComment;
+            }
+
+            console.log(`AI Comment added for ${item.name[currentLanguage]}:`, currentInspectionData[item.id].aiComment);
+            showNotification('Análisis de OpenAI completado.');
+        } catch (error) {
+            console.error('Error al procesar con OpenAI:', error);
+            showNotification('Error al procesar las imágenes con OpenAI.', 'error');
+            currentInspectionData[item.id].aiComment = 'Error al procesar las imágenes con OpenAI.';
+        }
+    } else {
+        console.log('No hay suficientes fotos o el comentario es insuficiente, se omite el envío a OpenAI.');
+        currentInspectionData[item.id].aiComment = 'No hay suficientes fotos o comentario válido.';
+    }
+
+    // Avanzar al siguiente ítem o completar la inspección
+    if (currentIndex < inspectionItems.length - 1) {
+        currentIndex++;
+        console.log(`Avanzando al siguiente ítem: ${inspectionItems[currentIndex].name[currentLanguage]}`);
+        updateInspectionDisplay();
+        updateProgressBar();
+        currentItemStatus = null; // Reiniciar el estado del ítem actual
+    } else {
+        console.log('Inspección completada.');
+        completeInspection();
+    }
+}
+
+/*async function nextItem() {
+    console.log('nextItem fue llamado');
+
+    // Obtener el ítem actual y detalles necesarios
+    const item = inspectionItems[currentIndex];
+    const requiredPhotos = item.requiredPhotos ?? 1; // Fotos requeridas, por defecto 1
+    const currentPhotos = currentInspectionData[item.id]?.photos || []; // Fotos actuales
+    const comment = document.getElementById('commentBox')?.value || ''; // Comentario del inspector
+
+    console.log('Current inspection item:', item);
+    console.log('Required photos:', requiredPhotos);
+    console.log('Current photos count:', currentPhotos.length);
+
+    // Caso especial: Si no se requieren fotos, avanzar directamente
+    if (requiredPhotos === 0) {
+        console.log(`El ítem "${item.name[currentLanguage]}" no requiere fotos, avanzando...`);
+        currentInspectionData[item.id] = {
+            ...currentInspectionData[item.id],
+            comment: comment,
+            status: currentItemStatus,
+            timestamp: new Date().toISOString(),
+            aiComment: 'No se requiere análisis de IA para este ítem.'
+        };
+        advanceToNextItem();
+        return;
+    }
+
+    // Validar si se han cargado las fotos requeridas antes de avanzar
+    if (currentPhotos.length < requiredPhotos) {
+        const missingPhotos = requiredPhotos - currentPhotos.length;
+        console.warn(`Faltan ${missingPhotos} fotos para completar este ítem.`);
+        showNotification(`Faltan ${missingPhotos} fotos para completar este ítem.`, 'error');
+        return;
+    }
+
+    // Guardar los datos del ítem actual
+    currentInspectionData[item.id] = {
+        ...currentInspectionData[item.id],
+        comment: comment,
+        status: currentItemStatus,
+        timestamp: new Date().toISOString()
+    };
+
+    // Procesar las fotos y comentarios con OpenAI si aplica
+    if (currentPhotos.length > 0 && comment.length >= 30) {
+        console.log('Llamando a OpenAI con fotos cargadas y comentario válido.');
+        try {
+            showNotification('Procesando imágenes con OpenAI...');
+
+            // Llamada a la función para analizar fotos
+            const aiComment = await analyzePhotoWithOpenAI(currentPhotos);
+
             // Guardar el comentario de IA en los datos del ítem actual
             currentInspectionData[item.id].aiComment = aiComment;
 
@@ -640,7 +727,7 @@ async function nextItem() {
         console.log('Inspección completada.');
         completeInspection();
     }
-}
+}*/
 
 
 /*async function nextItem() {
@@ -1590,6 +1677,89 @@ async function resizeImage(file, maxWidth = 1280, maxHeight = 960, quality = 0.7
 }
 async function analyzePhotoWithOpenAI(base64Images) {
     console.log('Starting analyzePhotoWithOpenAI function...');
+    const item = inspectionItems[currentIndex];
+
+    if (!item) {
+        console.error('No current inspection item found!');
+        return 'Error: No current inspection item found';
+    }
+
+    const componentName = item.name[currentLanguage];
+    console.log('Current inspection item:', item);
+    console.log('Component name:', componentName);
+    console.log('Base64 images count:', base64Images.length);
+
+    // Verificar si el ítem no requiere fotos
+    if (item.requiredPhotos === 0) {
+        console.log(`No photo analysis required for component: ${componentName}`);
+        return `Component: ${componentName}\nStatus: No photo analysis required`;
+    }
+
+    if (!Array.isArray(base64Images) || base64Images.length === 0) {
+        console.error('No images provided for analysis');
+        return `Error: No images provided for analysis for ${componentName}`;
+    }
+
+    try {
+        const responses = await Promise.allSettled(
+            base64Images.map(async (base64Image, index) => {
+                const payload = {
+                    prompt: componentName,
+                    image: base64Image.split(',')[1] // Base64 sin el prefijo
+                };
+
+                console.log(`Payload enviado al backend para imagen ${index + 1}:`, payload);
+
+                const response = await fetch('/api/openai', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                console.log(`Response status for image ${index + 1}:`, response.status);
+
+                if (!response.ok) {
+                    const errorDetails = await response.text();
+                    console.error(`HTTP error for image ${index + 1}:`, response.status, errorDetails);
+                    throw new Error(`HTTP error: ${response.status} - ${errorDetails}`);
+                }
+
+                const data = await response.json();
+                console.log(`Response data for image ${index + 1}:`, data);
+
+                if (data.refusal) {
+                    console.warn(`Refusal for image ${index + 1}:`, data.refusal);
+                    return `Refusal for image ${index + 1}: ${data.refusal}`;
+                }
+
+                if (data.result?.component) {
+                    return `Component: ${data.result.component}\nStatus: ${data.result.status}\nIssues: ${data.result.issues?.join(', ') || 'None'}`;
+                } else {
+                    console.error(`Invalid response format for image ${index + 1}:`, data);
+                    return `Error: Invalid response format for image ${index + 1}`;
+                }
+            })
+        );
+
+        const processedResponses = responses.map((result, index) => {
+            if (result.status === 'fulfilled') {
+                return result.value;
+            } else {
+                console.error(`Error processing image ${index + 1}:`, result.reason);
+                return `Error processing image ${index + 1}: ${result.reason.message}`;
+            }
+        });
+
+        console.log('All responses processed successfully:', processedResponses);
+        return processedResponses.join('\n');
+    } catch (error) {
+        console.error('Unexpected error analyzing photos:', error);
+        return 'Error analyzing photos';
+    }
+}
+
+/*async function analyzePhotoWithOpenAI(base64Images) {
+    console.log('Starting analyzePhotoWithOpenAI function...');
     console.log('Current inspection item:', inspectionItems[currentIndex]);
 
     const item = inspectionItems[currentIndex];
@@ -1647,7 +1817,7 @@ async function analyzePhotoWithOpenAI(base64Images) {
         console.error('Error analyzing photos:', error);
         return 'Error analyzing photos';
     }
-}
+}*/
 
 /*async function analyzePhotoWithOpenAI(base64Images) {
     console.log('Starting analyzePhotoWithOpenAI function...');
