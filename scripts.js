@@ -1527,6 +1527,11 @@ async function analyzePhotoWithOpenAI(base64Images) {
     try {
         const responses = await Promise.all(
             base64Images.map(async (base64Image, index) => {
+		    console.log('Payload enviado al backend:', {
+				    prompt: componentName,
+				    image: base64Image.split(',')[1]
+				});
+
                 console.log(`Sending image ${index + 1} to backend...`);
 
                 const response = await fetch('/api/openai', {
