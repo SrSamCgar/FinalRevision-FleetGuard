@@ -1249,8 +1249,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </p>
         `;
         return;
-    }*/
-
+    }
     records.forEach((record, index) => {
         let criticalCount = 0;
         let warningCount = 0;
@@ -1284,7 +1283,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Update language display
     updateLanguage();
-}
+}*/
 // Initialize the records screen
 function initializeRecordsScreen() {
     // Add records screen HTML
