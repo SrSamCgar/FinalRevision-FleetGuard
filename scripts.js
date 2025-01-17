@@ -1677,6 +1677,7 @@ async function resizeImage(file, maxWidth = 1280, maxHeight = 960, quality = 0.7
 }
 async function analyzePhotoWithOpenAI(base64Images) {
     console.log('Starting analyzePhotoWithOpenAI function...');
+
     const item = inspectionItems[currentIndex];
 
     if (!item) {
@@ -1685,7 +1686,7 @@ async function analyzePhotoWithOpenAI(base64Images) {
     }
 
     const componentName = item.name[currentLanguage];
-    console.log('Current inspection item:', item);
+    console.log('Current inspection item:', JSON.stringify(item, null, 2));
     console.log('Component name:', componentName);
     console.log('Base64 images count:', base64Images.length);
 
@@ -1708,7 +1709,7 @@ async function analyzePhotoWithOpenAI(base64Images) {
                     image: base64Image.split(',')[1] // Base64 sin el prefijo
                 };
 
-                console.log(`Payload enviado al backend para imagen ${index + 1}:`, payload);
+                console.log(`Payload enviado al backend para imagen ${index + 1}:`, JSON.stringify(payload, null, 2));
 
                 const response = await fetch('/api/openai', {
                     method: 'POST',
@@ -1725,17 +1726,17 @@ async function analyzePhotoWithOpenAI(base64Images) {
                 }
 
                 const data = await response.json();
-                console.log(`Response data for image ${index + 1}:`, data);
+                console.log(`Response data for image ${index + 1}:`, JSON.stringify(data, null, 2));
 
                 if (data.refusal) {
                     console.warn(`Refusal for image ${index + 1}:`, data.refusal);
                     return `Refusal for image ${index + 1}: ${data.refusal}`;
                 }
 
-                if (data.result?.component) {
+                if (data.result?.component && data.result?.status) {
                     return `Component: ${data.result.component}\nStatus: ${data.result.status}\nIssues: ${data.result.issues?.join(', ') || 'None'}`;
                 } else {
-                    console.error(`Invalid response format for image ${index + 1}:`, data);
+                    console.error(`Invalid response format for image ${index + 1}:`, JSON.stringify(data, null, 2));
                     return `Error: Invalid response format for image ${index + 1}`;
                 }
             })
@@ -1750,13 +1751,14 @@ async function analyzePhotoWithOpenAI(base64Images) {
             }
         });
 
-        console.log('All responses processed successfully:', processedResponses);
+        console.log('All responses processed:', JSON.stringify(processedResponses, null, 2));
         return processedResponses.join('\n');
     } catch (error) {
         console.error('Unexpected error analyzing photos:', error);
         return 'Error analyzing photos';
     }
 }
+
 
 /*async function analyzePhotoWithOpenAI(base64Images) {
     console.log('Starting analyzePhotoWithOpenAI function...');
