@@ -1,33 +1,22 @@
 export default async function handler(req, res) {
-    console.log('Request received:', req.method); // Log para registrar el método de la solicitud
-
-    // Verificar si el método es POST
+    console.log('Request received:', req.method);
+    
     if (req.method !== 'POST') {
-        console.error('Invalid method:', req.method); // Log del método incorrecto
+        console.error('Invalid method:', req.method);
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
     const { prompt, image } = req.body;
 
-    console.log('Request body:', req.body); // Log para inspeccionar el cuerpo de la solicitud
+    console.log('Request body:', req.body);
 
-    // Verificar que los campos requeridos estén presentes
     if (!prompt || !image) {
-        console.error('Missing required fields:', { prompt, image }); // Log si faltan campos requeridos
+        console.error('Missing required fields:', { prompt, image });
         return res.status(400).json({ error: 'Prompt and image are required' });
     }
 
-    // Asegurar que la imagen tenga el prefijo base64 correcto
-    let formattedImage = image;
-    if (!image.startsWith('data:image/')) {
-        console.warn('Missing base64 prefix for image. Adding prefix.');
-        formattedImage = `data:image/jpeg;base64,${image}`;
-    }
-
-    console.log('Formatted Image Preview:', formattedImage.substring(0, 50)); // Log del prefijo base64
-
     try {
-        console.log('Sending request to OpenAI...'); // Log antes de enviar la solicitud a OpenAI
+        console.log('Sending request to OpenAI...');
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
@@ -36,17 +25,15 @@ export default async function handler(req, res) {
                 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
             },
             body: JSON.stringify({
-                model: 'gpt-4o-2024-08-06', // Asegúrate de usar un modelo compatible con Structured Outputs
+                model: 'gpt-4o-2024-08-06', // Modelo compatible con Structured Outputs
                 messages: [
                     {
-                        role: 'user',
-                        content: `Analyze the following vehicle component: ${prompt}`,
+                        role: 'system',
+                        content: 'You are an AI that analyzes vehicle components.'
                     },
                     {
-                        type: 'image_url',
-                        image_url: {
-                            url: formattedImage,
-                        }
+                        role: 'user',
+                        content: `Analyze the following vehicle component: ${prompt}`
                     }
                 ],
                 response_format: {
@@ -78,15 +65,15 @@ export default async function handler(req, res) {
                         }
                     }
                 },
-                max_tokens: 100 // Ajusta según la longitud esperada de la respuesta
+                max_tokens: 100
             })
         });
 
-        console.log('OpenAI response status:', response.status); // Log del código de estado de OpenAI
+        console.log('OpenAI response status:', response.status);
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('OpenAI error response:', errorText); // Log del error detallado
+            console.error('OpenAI error response:', errorText);
             return res.status(response.status).json({ error: 'OpenAI request failed', details: errorText });
         }
 
@@ -95,23 +82,22 @@ export default async function handler(req, res) {
         // Validar si el modelo rechazó la solicitud
         const refusal = data.choices[0]?.message?.refusal;
         if (refusal) {
-            console.warn('OpenAI refusal:', refusal); // Log si OpenAI rechaza la solicitud
+            console.warn('OpenAI refusal:', refusal);
             return res.status(200).json({ refusal });
         }
 
         // Extraer y procesar los datos estructurados
         const structuredResponse = data.choices[0]?.message?.parsed;
-        console.log('OpenAI structured response raw:', data); // Log del objeto completo devuelto
+        console.log('Structured Response:', structuredResponse);
 
         if (!structuredResponse) {
-            console.error('Invalid structured response from OpenAI:', data); // Log si la respuesta es inválida
+            console.error('Invalid structured response from OpenAI:', data);
             return res.status(500).json({ error: 'Invalid structured response from OpenAI' });
         }
 
-        console.log('Structured Response:', structuredResponse); // Log de la respuesta procesada
         res.status(200).json({ result: structuredResponse });
     } catch (error) {
-        console.error('Error in handler:', error); // Log detallado del error
+        console.error('Error in handler:', error);
         res.status(500).json({ error: 'Failed to process request', details: error.message });
     }
 }
