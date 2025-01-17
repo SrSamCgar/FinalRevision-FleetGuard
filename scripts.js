@@ -404,8 +404,42 @@ function updateInspectionDisplay() {
     }
     updateCharCount();
 
-    // Update photo preview
+    // Update photo preview and compress it
 	async function handleImageProcessing(file) {
+    if (!file) {
+        console.error('No file provided');
+        return null;
+    }
+
+    const photoPreview = document.getElementById('photoPreview');
+    const spinner = document.getElementById('imageLoadingSpinner');
+
+    try {
+        if (spinner) spinner.style.display = 'block';
+        if (photoPreview) photoPreview.classList.add('processing');
+
+        // Process and compress the image
+        const processedImage = await compressImage(file);
+
+        // Update UI
+        if (photoPreview) {
+            photoPreview.src = processedImage;
+            photoPreview.style.display = 'block';
+            photoPreview.classList.remove('processing');
+        }
+
+        return processedImage;
+
+    } catch (error) {
+        console.error('Error processing image:', error);
+        showNotification('Error al procesar la imagen', 'error');
+        return null;
+    } finally {
+        if (spinner) spinner.style.display = 'none';
+        if (photoPreview) photoPreview.classList.remove('processing');
+    }
+}
+	*/async function handleImageProcessing(file) {
     const photoPreview = document.getElementById('photoPreview');
     if (photoPreview) {
         const spinner = document.getElementById('imageLoadingSpinner');
@@ -424,7 +458,7 @@ function updateInspectionDisplay() {
             photoPreview.classList.remove('processing');
         }
     }
-}
+}/*
 	document.getElementById('uploadButton').addEventListener('click', async () => {
     const fileInput = document.getElementById('fileInput');
     if (fileInput.files && fileInput.files[0]) {
@@ -879,8 +913,11 @@ async function openCamera() {
                 }
 
                 // Procesar la imagen usando handleImageProcessing
-                const processedImage = await handleImageProcessing(file);
-
+		    const processedImage = await handleImageProcessing(file);
+		    if (!processedImage) {
+		        showNotification('Error al procesar la imagen', 'error');
+		        return;
+		    }
                 // Guarda la imagen procesada en el ítem actual
                 currentInspectionData[item.id].photos.push(processedImage);
 
