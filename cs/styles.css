@@ -1,4 +1,4 @@
-/*Estos estilos son para arreglar los botones de tema e idioma en mobil*/
+/*Estos estilos son para arreglar los botones de tema e idioma en mobil y ahora las notificaciones tambien xD*/
 @media screen and (max-width: 768px) {
     .toggle-btn {
         position: fixed;
@@ -20,6 +20,19 @@
     }
     .admin-container {
         padding-top: 120px;
+    }
+    .custom-notification {
+        top: auto;
+        bottom: 2rem;
+        transform: translateX(-50%) translateY(150%);
+    }
+    .custom-notification.show {
+        transform: translateX(-50%) translateY(0);
+    }
+    input[type="text"],
+    input[type="password"],
+    textarea {
+        font-size: 16px !important;
     }
 }
 /*Nuevos estilos para la pantalla de records*/
@@ -102,15 +115,6 @@ textarea {
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
-}
-
-/* Fix for iOS zoom on input focus */
-@media screen and (max-width: 768px) {
-    input[type="text"],
-    input[type="password"],
-    textarea {
-        font-size: 16px !important;
-    }
 }
 /*Animaciones de carga mientras procesamos imagenes con IA*/
 .loading-spinner {
@@ -817,9 +821,9 @@ th, td {
 /* Notifications Personalizadas */
 .custom-notification {
     position: fixed;
-    top: -100%;  /* Change from 2rem to -100% */
+    top: 2rem;
     left: 50%;
-    transform: translateX(-50%) translateY(0);
+    transform: translateX(-50%) translateY(-150%);
     padding: 0.75rem 1.5rem;
     border-radius: 8px;
     background: rgba(0, 0, 0, 0.9);
@@ -830,20 +834,24 @@ th, td {
     text-align: center;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     z-index: 9999;
-    transition: transform 0.3s ease-in-out;
+    transition: all 0.3s ease-in-out;
+    opacity: 0;
+    visibility: hidden;
 }
 
 .custom-notification.show {
-    transform: translateX(-50%) translateY(calc(100% + 2rem));  /* Updated transform */
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    visibility: visible;
 }
 
-.custom-notification.success { 
+.custom-notification.success {
     background: rgba(16, 185, 129, 0.95);
 }
-.custom-notification.error { 
+.custom-notification.error {
     background: rgba(239, 68, 68, 0.95);
 }
-.custom-notification.warning { 
+.custom-notification.warning {
     background: rgba(245, 158, 11, 0.95);
 }
 
