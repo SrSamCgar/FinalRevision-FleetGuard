@@ -1284,23 +1284,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update language display
     updateLanguage();
 }*/
-// Initialize the records screen
-function initializeRecordsScreen() {
-    // Add records screen HTML
-    const recordsScreenDiv = document.createElement('div');
-    recordsScreenDiv.innerHTML = recordsScreen;
-    document.body.appendChild(recordsScreenDiv.firstElementChild);
-    
-    // Add styles
-    const styleSheet = document.createElement('style');
-    styleSheet.textContent = recordsStyles;
-    document.head.appendChild(styleSheet);
-}
-
-// Call this function when the app initializes
-document.addEventListener('DOMContentLoaded', () => {
-    initializeRecordsScreen();
-});
 async function resizeImage(file, maxWidth = 1280, maxHeight = 960, quality = 0.75) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -1807,7 +1790,7 @@ function showInspectionRecords() {
         currentWorker = null;
         showScreen('loginScreen');
     }
-}
+}*/
 function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -1818,7 +1801,7 @@ function debounce(func, wait) {
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
     };
-}*/
+}
 
 function validateInputs() {
     const workerId = document.getElementById('workerId').value.trim();
@@ -1964,18 +1947,15 @@ const CacheManager = {
         }
     }
 };
-//document loaders o event listeners
 document.addEventListener('DOMContentLoaded', function() {
-    // Add styles
-    const styleSheet = document.createElement('style');
-    styleSheet.textContent = statusButtonStyles;
-    document.head.appendChild(styleSheet);
-    
     // Initialize buttons
     initializeStatusButtons();
     
     // Initial language update
     updateLanguage();
+    
+    // Initialize any other necessary components
+    setupEventListeners();
 });
 // Export functions to window
 Object.assign(window, {
