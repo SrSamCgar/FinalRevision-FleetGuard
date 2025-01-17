@@ -24,7 +24,15 @@
     .custom-notification {
         top: auto;
         bottom: 2rem;
-        transform: translateX(-50%) translateY(150%);
+        width: calc(100% - 2rem);
+        max-width: none;
+        transform: translateX(-50%) translateY(100%);
+        margin: 0 auto;
+        padding: 0.75rem;
+        border-radius: 8px;
+        left: 50%;
+        height: auto;
+        min-height: 3rem;
     }
     .custom-notification.show {
         transform: translateX(-50%) translateY(0);
@@ -34,6 +42,25 @@
     textarea {
         font-size: 16px !important;
     }
+}
+.screen {
+    display: none;
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    background-color: var(--background-light);
+}
+.dark-theme .screen {
+    background-color: var(--background-dark);
+}
+.screen.active {
+    display: block;
 }
 /*Nuevos estilos para la pantalla de records*/
 .records-controls {
@@ -538,7 +565,9 @@ textarea {
 html, body {
     height: 100%;
     width: 100%;
-    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
     -webkit-overflow-scrolling: touch;
     position: relative;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -548,11 +577,9 @@ html, body {
 }
 
 body {
-    overscroll-behavior-y: contain;
     position: fixed;
     width: 100%;
     height: 100%;
-    overflow-y: auto;
 }
 
 /* Dark Theme */
