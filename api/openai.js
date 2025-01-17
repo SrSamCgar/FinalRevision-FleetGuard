@@ -69,7 +69,7 @@ export default async function handler(req, res) {
                                     items: { type: "string", description: "Lista de problemas detectados", enum: predefinedConditions.issues }
                                 }
                             },
-                            required: ["component", "status"]
+                            required: ["component", "status", "issues"] // Asegurar que 'issues' sea requerido
                         }
                     }
                 ],
@@ -89,8 +89,12 @@ export default async function handler(req, res) {
             let parsedArguments;
             try {
                 parsedArguments = JSON.parse(choice.message.function_call.arguments);
+                // Fallback para issues si no están presentes
+                parsedArguments.issues = Array.isArray(parsedArguments.issues) 
+                    ? parsedArguments.issues 
+                    : ["No presenta problemas"];
             } catch (error) {
-                console.error('Error al analizar los argumentos:', error);
+                console.error('Error al analizar los argumentos JSON:', error);
                 return res.status(500).json({ error: 'JSON inválido en function_call.arguments' });
             }
 
@@ -100,7 +104,7 @@ export default async function handler(req, res) {
                 return res.status(500).json({ error: 'Estado inválido en la respuesta' });
             }
 
-            if (parsedArguments.issues.some(issue => !predefinedConditions.issues.includes(issue))) {
+            if (!Array.isArray(parsedArguments.issues) || parsedArguments.issues.some(issue => !predefinedConditions.issues.includes(issue))) {
                 console.error('Problemas inválidos recibidos:', parsedArguments.issues);
                 return res.status(500).json({ error: 'Problemas inválidos en la respuesta' });
             }
@@ -113,7 +117,7 @@ export default async function handler(req, res) {
             res.status(response.status).json({ error: data });
         }
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error al procesar la solicitud:', error);
         res.status(500).json({ error: 'Error al procesar la solicitud' });
     }
 }
