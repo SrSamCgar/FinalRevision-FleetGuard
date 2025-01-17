@@ -1,3 +1,24 @@
+/*Estos estilos son para arreglar los botones de tema e idioma en mobil*/
+@media screen and (max-width: 768px) {
+    .toggle-btn {
+        position: fixed;
+        z-index: 10;
+        background: var(--background-light);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .dark-theme .toggle-btn {
+        background: var(--background-dark);
+    }
+    
+    .screen.active {
+        padding-top: 120px; /* Make room for the floating buttons */
+    }
+    
+    .admin-container {
+        padding-top: 120px;
+    }
+}
 /*Nuevos estilos para la pantalla de records*/
 .records-controls {
     display: flex;
@@ -224,6 +245,15 @@ textarea {
     justify-content: space-between;
     align-items: center;
     margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-md);
+    background-color: var(--background-light);
+    border-bottom: 1px solid var(--border-light);
+    position: relative;
+    z-index: 1;
+}
+.dark-theme .admin-header {
+    background-color: var(--background-dark);
+    border-color: var(--border-dark);
 }
 
 .admin-header .btn-secondary {
