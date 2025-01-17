@@ -570,7 +570,7 @@ async function nextItem() {
     const item = inspectionItems[currentIndex];
     const requiredPhotos = item.requiredPhotos ?? 1; // Fotos requeridas, por defecto 1
     const currentPhotos = currentInspectionData[item.id]?.photos || []; // Fotos actuales
-    const comment = document.getElementById('commentBox')?.value || ''; // Comentario del inspector
+    const comment = document.getElementById('commentBox')?.value.trim() || ''; // Comentario del inspector
 
     console.log('Current inspection item:', JSON.stringify(item, null, 2));
     console.log('Required photos:', requiredPhotos);
@@ -652,6 +652,96 @@ async function nextItem() {
         completeInspection();
     }
 }
+
+/*async function nextItem() {
+    console.log('nextItem fue llamado');
+
+    // Obtener el ítem actual y detalles necesarios
+    const item = inspectionItems[currentIndex];
+    const requiredPhotos = item.requiredPhotos ?? 1; // Fotos requeridas, por defecto 1
+    const currentPhotos = currentInspectionData[item.id]?.photos || []; // Fotos actuales
+    const comment = document.getElementById('commentBox')?.value || ''; // Comentario del inspector
+
+    console.log('Current inspection item:', JSON.stringify(item, null, 2));
+    console.log('Required photos:', requiredPhotos);
+    console.log('Current photos count:', currentPhotos.length);
+
+    // Caso especial: Si no se requieren fotos, avanzar directamente
+    if (requiredPhotos === 0) {
+        console.log(`El ítem "${item.name[currentLanguage]}" no requiere fotos, avanzando...`);
+        currentInspectionData[item.id] = {
+            ...currentInspectionData[item.id],
+            comment: comment,
+            status: currentItemStatus,
+            timestamp: new Date().toISOString(),
+            aiComment: 'No se requiere análisis de IA para este ítem.',
+        };
+        advanceToNextItem();
+        return;
+    }
+
+    // Validar si se han cargado las fotos requeridas antes de avanzar
+    if (currentPhotos.length < requiredPhotos) {
+        const missingPhotos = requiredPhotos - currentPhotos.length;
+        console.warn(`Faltan ${missingPhotos} fotos para completar este ítem.`);
+        showNotification(`Faltan ${missingPhotos} fotos para completar este ítem.`, 'error');
+        return;
+    }
+
+    // Guardar los datos del ítem actual
+    currentInspectionData[item.id] = {
+        ...currentInspectionData[item.id],
+        comment: comment,
+        status: currentItemStatus,
+        timestamp: new Date().toISOString(),
+    };
+
+    // Procesar las fotos y comentarios con OpenAI si aplica
+    if (currentPhotos.length > 0 && comment.length >= 30) {
+        console.log('Llamando a OpenAI con fotos cargadas y comentario válido.');
+        try {
+            showNotification('Procesando imágenes con OpenAI...');
+
+            // Llamada a la función para analizar fotos
+            const aiComment = await analyzePhotoWithOpenAI(currentPhotos);
+
+            // Validar y formatear el comentario de IA
+            if (Array.isArray(aiComment)) {
+                console.log('AI Comment recibido como array:', aiComment);
+                const formattedAIComment = aiComment.map((comment, index) => `Imagen ${index + 1}: ${comment}`).join('\n');
+                currentInspectionData[item.id].aiComment = formattedAIComment;
+            } else if (typeof aiComment === 'string') {
+                console.log('AI Comment recibido como string:', aiComment);
+                currentInspectionData[item.id].aiComment = aiComment;
+            } else {
+                console.error('Formato inesperado del comentario de AI:', aiComment);
+                currentInspectionData[item.id].aiComment = 'Error: Formato inesperado del comentario de AI.';
+            }
+
+            console.log(`AI Comment added for ${item.name[currentLanguage]}:`, currentInspectionData[item.id].aiComment);
+            showNotification('Análisis de OpenAI completado.');
+        } catch (error) {
+            console.error('Error al procesar con OpenAI:', error);
+            showNotification('Error al procesar las imágenes con OpenAI.', 'error');
+            currentInspectionData[item.id].aiComment = 'Error al procesar las imágenes con OpenAI.';
+        }
+    } else {
+        console.log('No hay suficientes fotos o el comentario es insuficiente, se omite el envío a OpenAI.');
+        currentInspectionData[item.id].aiComment = 'No hay suficientes fotos o comentario válido.';
+    }
+
+    // Avanzar al siguiente ítem o completar la inspección
+    if (currentIndex < inspectionItems.length - 1) {
+        currentIndex++;
+        console.log(`Avanzando al siguiente ítem: ${inspectionItems[currentIndex].name[currentLanguage]}`);
+        updateInspectionDisplay();
+        updateProgressBar();
+        currentItemStatus = null; // Reiniciar el estado del ítem actual
+    } else {
+        console.log('Inspección completada.');
+        completeInspection();
+    }
+}*/
 
 
 /*async function nextItem() {
@@ -972,6 +1062,114 @@ function generateInspectionPDF(inspection) {
             `Vehicle ID: ${inspection.truckId}`,
             `Model: ${truck ? truck.model : 'N/A'}`,
             `Year: ${truck ? truck.year : 'N/A'}`,
+            `Date: ${inspection.date}`,
+        ];
+
+        basicInfo.forEach(info => {
+            doc.text(info, 20, y);
+            y += 10;
+        });
+        y += 10;
+
+        // Inspection Items Section
+        Object.entries(inspection.data).forEach(([key, value]) => {
+            const item = inspectionItems.find(i => i.id === key);
+            if (!item) return;
+
+            if (y > doc.internal.pageSize.getHeight() - 60) {
+                doc.addPage();
+                y = 20;
+            }
+
+            // Item Header
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${item.name[currentLanguage]} - Status: ${value.status.toUpperCase()}`, 20, y);
+            y += 10;
+
+            // Inspector Comments
+            if (value.comment) {
+                const commentLines = doc.splitTextToSize(`Inspector Comments: ${value.comment}`, 170);
+                doc.text(commentLines, 20, y);
+                y += commentLines.length * 6;
+            }
+
+            // AI Comments
+            if (value.aiComment) {
+                const aiCommentLines = doc.splitTextToSize(`AI Analysis: ${value.aiComment}`, 170);
+                doc.text(aiCommentLines, 20, y);
+                y += aiCommentLines.length * 6;
+            }
+
+            // Photos
+            if (value.photos && value.photos.length > 0) {
+                value.photos.forEach((photo, index) => {
+                    if (y + 70 > doc.internal.pageSize.getHeight() - 20) {
+                        doc.addPage();
+                        y = 20;
+                    }
+
+                    try {
+                        doc.addImage(photo, 'JPEG', 20, y, 50, 50);
+                        y += 55;
+                    } catch (error) {
+                        console.error(`Error adding image for photo ${index + 1}:`, error);
+                        doc.text(`Error: Unable to add image ${index + 1}`, 20, y);
+                        y += 10;
+                    }
+                });
+            }
+
+            y += 10; // Add spacing between items
+        });
+
+        // Footer
+        doc.setFontSize(10);
+        doc.setTextColor(128, 128, 128);
+        doc.text(`Generated: ${new Date().toLocaleString()}`, 20, doc.internal.pageSize.getHeight() - 15);
+
+        // Save PDF
+        const timestamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
+        doc.save(`FleetGuard_Inspection_${inspection.truckId}_${timestamp}.pdf`);
+
+        return true;
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        showNotification('Error generating PDF report', 'error');
+        return false;
+    }
+}
+
+/*function generateInspectionPDF(inspection) {
+    const { jsPDF } = window.jspdf;
+    if (!jsPDF) {
+        console.error('jsPDF library not loaded');
+        showNotification('Error: PDF generation library not available', 'error');
+        return;
+    }
+
+    try {
+        const doc = new jsPDF();
+
+        // Header with styling
+        doc.setFillColor(59, 130, 246);
+        doc.rect(0, 0, doc.internal.pageSize.getWidth(), 30, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(20);
+        doc.text('FleetGuard Inspection Report', 20, 20);
+
+        // Reset text color for body
+        doc.setTextColor(0, 0, 0);
+        let y = 40;
+        doc.setFontSize(12);
+
+        // Basic Info Section
+        const truck = trucks[inspection.truckId];
+        const basicInfo = [
+            `Inspector: ${inspection.worker}`,
+            `Vehicle ID: ${inspection.truckId}`,
+            `Model: ${truck ? truck.model : 'N/A'}`,
+            `Year: ${truck ? truck.year : 'N/A'}`,
             `Date: ${inspection.date}`
         ];
 
@@ -1061,7 +1259,7 @@ function generateInspectionPDF(inspection) {
         showNotification('Error generating PDF report', 'error');
         return false;
     }
-}
+}*/
 
 /*function generateInspectionPDF(inspection) {
     const { jsPDF } = window.jspdf;
