@@ -829,7 +829,18 @@ async function openCamera() {
         advanceToNextItem();
         return;
     }
+ 	// Inicializar el array de fotos si no existe
+    if (!currentInspectionData[item.id]) {
+        currentInspectionData[item.id] = { photos: [] };
+    } else if (!currentInspectionData[item.id].photos) {
+        currentInspectionData[item.id].photos = [];
+    }
 
+    // Verificar si ya tenemos todas las fotos requeridas
+    if (currentInspectionData[item.id].photos.length >= requiredPhotos) {
+        showNotification('Ya se han tomado todas las fotos requeridas.', 'warning');
+        return;
+    }
     // Evitar múltiples aperturas rápidas de la cámara
     if (Date.now() - lastCaptureTime < 1000) {
         console.log('Preventing multiple rapid camera opens');
@@ -1587,15 +1598,15 @@ function initializeMobileOptimizations() {
 }
 
 function setupTouchHandling() {
-    // Prevent double-tap zoom
-    document.querySelectorAll('button, input, select').forEach(element => {
+    // Remove the existing event listeners for buttons, inputs, and selects
+    document.querySelectorAll('button').forEach(element => {
         element.addEventListener('touchend', (e) => {
             e.preventDefault();
             element.click();
         });
     });
 
-    // Improve touch response
+    // Add passive touch handlers
     document.addEventListener('touchstart', () => {}, { passive: true });
     document.addEventListener('touchmove', () => {}, { passive: true });
 }
