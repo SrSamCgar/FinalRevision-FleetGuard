@@ -20,7 +20,10 @@
     <div id="customNotification" class="custom-notification"></div>
 
     <!-- Global Controls -->
-    <button id="languageToggleBtn" class="toggle-btn language-toggle" onclick="toggleLanguage()">🇲🇽 ES</button>
+    <button id="languageToggleBtn" class="toggle-btn language-toggle" onclick="toggleLanguage()">
+    <span data-lang="en" style="display: none;">🇺🇸 EN</span>
+    <span data-lang="es">🇲🇽 ES</span>
+    </button>
     <button class="toggle-btn theme-toggle" onclick="toggleTheme()">🌓</button>
 
     <!-- Login Screen -->
@@ -105,7 +108,8 @@
                     <span data-lang="en">Take Photo</span>
                     <span data-lang="es">Tomar Fotografía</span>
                 </button>
-                <img id="photoPreview" style="max-width: 100%; margin-top: 10px; display: none;">
+                <div id="imageLoadingSpinner" class="loading-spinner"></div>
+                <img id="photoPreview" style="max-width: 100%; margin-top: 10px; display: none;" loading="lazy">
             </div>
 
             <div class="nav-buttons">
