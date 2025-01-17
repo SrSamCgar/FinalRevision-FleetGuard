@@ -563,8 +563,73 @@ function initializeStatusButtons() {
     
     updateCharCount();
 }*/
-
 async function nextItem() {
+    console.log('nextItem fue llamado');
+    const item = inspectionItems[currentIndex];
+    const requiredPhotos = item.requiredPhotos ?? 1; // Cantidad de fotos requeridas (por defecto 1)
+    const currentPhotos = currentInspectionData[item.id]?.photos || [];
+    const comment = document.getElementById('commentBox')?.value || '';
+
+    // Caso especial: si no se requieren fotos, avanzar directamente
+    if (requiredPhotos === 0) {
+        console.log(`El ítem "${item.name[currentLanguage]}" no requiere fotos, avanzando...`);
+        currentInspectionData[item.id] = {
+            ...currentInspectionData[item.id],
+            comment: comment,
+            status: currentItemStatus,
+            timestamp: new Date().toISOString(),
+            aiComment: 'No se requiere análisis de IA para este ítem.'
+        };
+        advanceToNextItem();
+        return;
+    }
+
+    // Validar si se han cargado las fotos requeridas antes de avanzar
+    if (currentPhotos.length < requiredPhotos) {
+        showNotification(
+            `Faltan ${requiredPhotos - currentPhotos.length} fotos para completar este ítem.`,
+            'error'
+        );
+        return;
+    }
+
+    // Guardar datos del ítem actual
+    currentInspectionData[item.id] = {
+        ...currentInspectionData[item.id],
+        comment: comment,
+        status: currentItemStatus,
+        timestamp: new Date().toISOString()
+    };
+
+    // Enviar fotos y comentarios a OpenAI si aplica
+    if (currentPhotos.length > 0 && comment.length >= 30) {
+        console.log('Llamando a OpenAI con fotos cargadas y comentario válido.');
+        try {
+            showNotification('Procesando imágenes con OpenAI...');
+            const aiComment = await analyzePhotoWithOpenAI(currentPhotos); // Procesar con IA
+            currentInspectionData[item.id].aiComment = aiComment; // Guardar el comentario de IA
+            showNotification('Análisis de OpenAI completado.');
+        } catch (error) {
+            console.error('Error al procesar con OpenAI:', error);
+            showNotification('Error al procesar las imágenes con OpenAI.', 'error');
+        }
+    } else {
+        console.log('No hay suficientes fotos o el comentario es insuficiente, se omite el envío a OpenAI.');
+        currentInspectionData[item.id].aiComment = 'No hay suficientes fotos o comentario válido.';
+    }
+
+    // Avanzar al siguiente ítem o completar la inspección
+    if (currentIndex < inspectionItems.length - 1) {
+        currentIndex++;
+        updateInspectionDisplay();
+        updateProgressBar();
+        currentItemStatus = null; // Reiniciar el estado del ítem actual
+    } else {
+        completeInspection();
+    }
+}
+
+/*async function nextItem() {
     const item = inspectionItems[currentIndex];
     const requiredPhotos = item.requiredPhotos ?? 0;
     const currentPhotos = currentInspectionData[item.id]?.photos || [];
@@ -593,7 +658,7 @@ async function nextItem() {
     } else {
         completeInspection();
     }
-}
+}*/
 
 function previousItem() {
     if (currentIndex > 0) {
@@ -949,7 +1014,7 @@ async function completeInspection() {
     showScreen('recordsScreen');
 }*/
 
-function validateNextButton(charCount, minCharLimit, maxCharLimit) {
+/*function validateNextButton(charCount, minCharLimit, maxCharLimit) {
     const nextButton = document.getElementById('nextButton');
     const isValid = charCount >= minCharLimit && 
                    charCount <= maxCharLimit && 
@@ -968,6 +1033,50 @@ function updateCharCount() {
     const charCount = commentBox.value.length;
     charCountDisplay.textContent = `${charCount}/150`;
     validateNextButton(charCount, 30, 150);
+}*/
+function validateNextButton(charCount, minCharLimit, maxCharLimit) {
+    const nextButton = document.getElementById('nextButton');
+
+    // Verificar si el ítem actual tiene fotos suficientes
+    const item = inspectionItems[currentIndex];
+    const requiredPhotos = item?.requiredPhotos || 0;
+    const currentPhotos = currentInspectionData[item.id]?.photos?.length || 0;
+
+    // Validar si se cumplen todas las condiciones
+    const isValid = 
+        charCount >= minCharLimit && 
+        charCount <= maxCharLimit && 
+        currentItemStatus !== null && 
+        currentPhotos >= requiredPhotos;
+
+    // Actualizar estado del botón
+    if (isValid) {
+        nextButton.classList.remove('disabled');
+        nextButton.disabled = false;
+    } else {
+        nextButton.classList.add('disabled');
+        nextButton.disabled = true;
+    }
+}
+function updateCharCount() {
+    const commentBox = document.getElementById('commentBox');
+    const charCountDisplay = document.getElementById('charCount');
+
+    if (!commentBox || !charCountDisplay) {
+        console.error('Required elements not found in DOM.');
+        return;
+    }
+
+    const charCount = commentBox.value.length;
+    const minCharLimit = 30;
+    const maxCharLimit = 150;
+
+    // Mostrar el conteo de caracteres
+    charCountDisplay.textContent = `${charCount}/${maxCharLimit}`;
+    charCountDisplay.style.color = charCount < minCharLimit ? 'red' : 'green';
+
+    // Validar el botón "Next Item"
+    validateNextButton(charCount, minCharLimit, maxCharLimit);
 }
 // Image Processing and Camera Functions
 async function openCamera() {
