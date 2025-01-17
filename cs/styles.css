@@ -1,3 +1,41 @@
+/* New CSS for settings screen */
+.settings-grid {
+    display: grid;
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+}
+
+.settings-section {
+    background: var(--background-light);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-lg);
+}
+
+.setting-item {
+    margin-bottom: var(--spacing-md);
+}
+
+.setting-item label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    font-weight: 500;
+}
+
+.dark-theme .settings-section {
+    background: #2d2d2d;
+}
+/* New CSS for admin header */
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.admin-header .btn-secondary {
+    width: auto;
+    margin: 0;
+}
 /* Styles for language and theme buttons */
 .toggle-btn {
     position: fixed;
