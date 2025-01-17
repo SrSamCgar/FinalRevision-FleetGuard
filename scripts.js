@@ -1729,6 +1729,82 @@ function showNotification(message, type = 'success') {
 function backToLogin() {
     if (confirm('Are you sure you want to logout?')) {
         currentWorker = null;
+        // Hide admin menu
+        const menuBtn = document.getElementById('menuToggleBtn');
+        const sidebar = document.getElementById('adminSidebar');
+        if (menuBtn) menuBtn.style.display = 'none';
+        if (sidebar) sidebar.classList.remove('open');
+        
+        // Reset any open screens
+        document.querySelectorAll('.screen').forEach(screen => {
+            screen.style.display = 'none';
+        });
+        
+        // Show login screen
+        showScreen('loginScreen');
+        
+        // Clear any stored data
+        localStorage.removeItem('currentWorker');
+    }
+}
+// Initialize records screen events
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('recordSearchInput');
+    const filterSelect = document.getElementById('recordFilterStatus');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            currentPage = 1;
+            displayRecords(currentPage);
+        });
+    }
+    
+    if (filterSelect) {
+        filterSelect.addEventListener('change', () => {
+            currentPage = 1;
+            displayRecords(currentPage);
+        });
+    }
+    
+    // Initialize pagination buttons
+    document.getElementById('prevPage')?.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            displayRecords(currentPage);
+        }
+    });
+    
+    document.getElementById('nextPage')?.addEventListener('click', () => {
+        const records = filterRecords();
+        const totalPages = Math.ceil(records.length / recordsPerPage);
+        if (currentPage < totalPages) {
+            currentPage++;
+            displayRecords(currentPage);
+        }
+    });
+});
+function showInspectionRecords() {
+    // First toggle the sidebar
+    toggleSidebar();
+    
+    // Show the records screen
+    showScreen('recordsScreen');
+    
+    // Reset to first page
+    currentPage = 1;
+    
+    // Display the records
+    displayRecords(currentPage);
+    
+    // Initialize any filters to default state
+    const searchInput = document.getElementById('recordSearchInput');
+    const filterSelect = document.getElementById('recordFilterStatus');
+    if (searchInput) searchInput.value = '';
+    if (filterSelect) filterSelect.value = 'all';
+}
+/*function backToLogin() {
+    if (confirm('Are you sure you want to logout?')) {
+        currentWorker = null;
         showScreen('loginScreen');
     }
 }
@@ -1742,7 +1818,7 @@ function debounce(func, wait) {
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
     };
-}
+}*/
 
 function validateInputs() {
     const workerId = document.getElementById('workerId').value.trim();
