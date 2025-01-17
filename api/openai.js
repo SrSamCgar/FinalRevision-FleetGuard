@@ -80,7 +80,7 @@ export default async function handler(req, res) {
         const data = await response.json();
 
         console.log('Raw response from OpenAI:', data);
-
+        console.log('Response data content:', JSON.stringify(data))
         const structuredResponse = data.choices[0]?.message?.function_call?.arguments;
         if (!structuredResponse) {
             console.error('Invalid structured response from OpenAI:', data);
