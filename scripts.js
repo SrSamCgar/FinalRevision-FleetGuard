@@ -1367,7 +1367,7 @@ async function resizeImage(file, maxWidth = 1280, maxHeight = 960, quality = 0.7
     });
 }
 
-/*async function analyzePhotoWithOpenAI(base64Images) {
+async function analyzePhotoWithOpenAI(base64Images) {
     const item = inspectionItems[currentIndex];
     const componentName = item.name[currentLanguage];
 
@@ -1385,7 +1385,7 @@ async function resizeImage(file, maxWidth = 1280, maxHeight = 960, quality = 0.7
             base64Images.map(async (base64Image, index) => {
                 const base64Content = base64Image.split(',')[1];
 
-                const response = await fetch('https://fleet-guard-test.vercel.app/api/openai', {
+                const response = await fetch('https://final-revision-fleet-guard.vercel.app/FinalRevision-FleetGuard/api/openai.js', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1418,7 +1418,7 @@ async function resizeImage(file, maxWidth = 1280, maxHeight = 960, quality = 0.7
         console.error('Error analyzing photos:', error);
         return 'Error analyzing photos';
     }
-}*/
+}
 // Admin Dashboard Functions
 function showAdminDashboard() {
     showScreen('adminScreen');
