@@ -1096,7 +1096,144 @@ function downloadPDF(index) {
     generateInspectionPDF(record);
 }
 // Function to display records
-function displayRecords() {
+function displayRecords(page = 1) {
+    const recordsContainer = document.getElementById('recordsContainer');
+    if (!recordsContainer) return;
+    
+    // Get all records
+    let records = JSON.parse(localStorage.getItem('inspectionRecords') || '[]');
+    
+    // Filter records based on user role
+    if (currentWorker.role !== 'admin') {
+        records = records.filter(record => record.worker === currentWorker.name);
+    }
+
+    // Handle search and filters if they exist (for admin view)
+    if (currentWorker.role === 'admin') {
+        const searchTerm = document.getElementById('recordSearchInput')?.value?.toLowerCase();
+        const statusFilter = document.getElementById('recordFilterStatus')?.value;
+        
+        if (searchTerm) {
+            records = records.filter(record => 
+                record.worker.toLowerCase().includes(searchTerm) ||
+                record.truckId.toLowerCase().includes(searchTerm)
+            );
+        }
+        
+        if (statusFilter && statusFilter !== 'all') {
+            records = records.filter(record => 
+                Object.values(record.data).some(item => item.status === statusFilter)
+            );
+        }
+    }
+
+    // Sort records by date (newest first)
+    records.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    // Pagination (only for admin view)
+    const recordsPerPage = 10;
+    let paginatedRecords = records;
+    let totalPages = 1;
+    
+    if (currentWorker.role === 'admin') {
+        totalPages = Math.ceil(records.length / recordsPerPage);
+        const startIndex = (page - 1) * recordsPerPage;
+        paginatedRecords = records.slice(startIndex, startIndex + recordsPerPage);
+        
+        // Update pagination controls if they exist
+        const pageInfo = document.getElementById('pageInfo');
+        const prevPage = document.getElementById('prevPage');
+        const nextPage = document.getElementById('nextPage');
+        
+        if (pageInfo) pageInfo.textContent = `Page ${page} of ${totalPages}`;
+        if (prevPage) prevPage.disabled = page === 1;
+        if (nextPage) nextPage.disabled = page === totalPages;
+    }
+
+    recordsContainer.innerHTML = '';
+
+    if (paginatedRecords.length === 0) {
+        recordsContainer.innerHTML = `
+            <p class="text-center">
+                <span data-lang="en">No inspection records found.</span>
+                <span data-lang="es">No se encontraron registros de inspección.</span>
+            </p>
+        `;
+        return;
+    }
+
+    paginatedRecords.forEach((record) => {
+        let criticalCount = 0;
+        let warningCount = 0;
+
+        Object.values(record.data).forEach(item => {
+            if (item.status === 'critical') criticalCount++;
+            if (item.status === 'warning') warningCount++;
+        });
+
+        const recordItem = document.createElement('div');
+        recordItem.className = 'record-item';
+
+        // Different layouts for admin and user views
+        if (currentWorker.role === 'admin') {
+            recordItem.innerHTML = `
+                <div class="record-details">
+                    <strong>${record.worker}</strong>
+                    <div class="record-metadata">
+                        <span class="record-timestamp">${new Date(record.date).toLocaleString()}</span>
+                        ${criticalCount > 0 ? 
+                            `<span class="record-status status-critical">${criticalCount} Critical</span>` : 
+                            ''}
+                        ${warningCount > 0 ? 
+                            `<span class="record-status status-warning">${warningCount} Warning</span>` : 
+                            ''}
+                    </div>
+                    <div>Truck ID: ${record.truckId}</div>
+                </div>
+                <div class="record-actions">
+                    <button class="btn btn-secondary" onclick="viewRecordDetails('${record.truckId}')">
+                        <span data-lang="en">Details</span>
+                        <span data-lang="es">Detalles</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="downloadPDF('${record.truckId}')">PDF</button>
+                </div>
+            `;
+        } else {
+            // Simpler view for regular users
+            recordItem.innerHTML = `
+                <div>
+                    <p><strong>${record.truckId} - ${record.date}</strong></p>
+                    <div class="record-metadata">
+                        ${criticalCount > 0 ? 
+                            `<span class="record-status status-critical">${criticalCount} Critical</span>` : 
+                            ''}
+                        ${warningCount > 0 ? 
+                            `<span class="record-status status-warning">${warningCount} Warning</span>` : 
+                            ''}
+                    </div>
+                </div>
+                <button class="btn" onclick="downloadPDF('${record.truckId}')">PDF</button>
+            `;
+        }
+
+        recordsContainer.appendChild(recordItem);
+    });
+    
+    // Update language display
+    updateLanguage();
+}
+// Add event listeners
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('recordSearchInput')?.addEventListener('input', 
+        debounce(() => displayRecords(1), 300));
+    document.getElementById('recordFilterStatus')?.addEventListener('change', 
+        () => displayRecords(1));
+    document.getElementById('prevPage')?.addEventListener('click', 
+        () => displayRecords(--currentPage));
+    document.getElementById('nextPage')?.addEventListener('click', 
+        () => displayRecords(++currentPage));
+});
+/*function displayRecords() {
     const recordsContainer = document.getElementById('recordsContainer');
     if (!recordsContainer) return;
     
@@ -1112,7 +1249,7 @@ function displayRecords() {
             </p>
         `;
         return;
-    }
+    }*/
 
     records.forEach((record, index) => {
         let criticalCount = 0;
