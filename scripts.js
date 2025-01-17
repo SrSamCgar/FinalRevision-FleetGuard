@@ -628,6 +628,20 @@ async function nextItem() {
         completeInspection();
     }
 }
+function advanceToNextItem() {
+    if (currentIndex < inspectionItems.length - 1) {
+        console.log('Avanzando al siguiente ítem.');
+        currentIndex++;
+        updateInspectionDisplay();
+        updateProgressBar();
+        currentItemStatus = null; // Resetear el estado para el siguiente ítem
+        document.getElementById('photoPreview').style.display = 'none'; // Ocultar vista previa de foto
+        document.getElementById('photoPreview').src = ''; // Limpiar el src de la foto
+    } else {
+        console.log('Inspección completada.');
+        completeInspection();
+    }
+}
 
 /*async function nextItem() {
     const item = inspectionItems[currentIndex];
@@ -1385,7 +1399,7 @@ async function analyzePhotoWithOpenAI(base64Images) {
             base64Images.map(async (base64Image, index) => {
                 const base64Content = base64Image.split(',')[1];
 
-                const response = await fetch('https://final-revision-fleet-guard.vercel.app/FinalRevision-FleetGuard/api/openai.js', {
+                const response = await fetch('https://final-revision-fleet-guard.vercel.app/api/openai', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
