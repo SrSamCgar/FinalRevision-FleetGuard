@@ -496,7 +496,41 @@ function updateProgressBar() {
         progressBar.style.width = `${progress}%`;
     }
 }
-function setItemStatus(status, event) {
+function setItemStatus(status) {
+    // Set the current status
+    currentItemStatus = status;
+
+    // Get all status buttons and the clicked one
+    const buttons = document.querySelectorAll('.status-btn');
+    const clickedButton = document.querySelector(`.status-btn[data-status="${status}"]`);
+
+    // Remove active class from all buttons
+    buttons.forEach(button => {
+        button.classList.remove('active');
+    });
+
+    // Add active class to clicked button
+    if (clickedButton) {
+        clickedButton.classList.add('active');
+    }
+
+    // Save item state in currentInspectionData
+    const item = inspectionItems[currentIndex];
+    if (!currentInspectionData[item.id]) {
+        currentInspectionData[item.id] = {};
+    }
+    
+    currentInspectionData[item.id] = {
+        ...currentInspectionData[item.id],
+        status: status,
+        comment: document.getElementById('commentBox')?.value || '',
+        photo: document.getElementById('photoPreview')?.src || null
+    };
+
+    // Update character count and validate next button
+    updateCharCount();
+}
+/*function setItemStatus(status, event) {
     // Set the current status
     currentItemStatus = status;
 
@@ -530,17 +564,23 @@ function setItemStatus(status, event) {
 
     // Update character count and validate next button
     updateCharCount();
-}
+}*/
 
 // Add event listeners to status buttons
-document.addEventListener('DOMContentLoaded', function() {
+document.querySelectorAll('.status-btn').forEach(button => {
+    button.addEventListener('click', function() {
+        const status = this.getAttribute('data-status');
+        setItemStatus(status);
+    });
+});
+/*document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.status-btn').forEach(button => {
         button.addEventListener('click', function(event) {
             const status = this.getAttribute('data-status');
             setItemStatus(status, event);
         });
     });
-});
+});*/
 
 function initializeStatusButtons() {
     document.querySelectorAll('.status-btn').forEach(button => {
