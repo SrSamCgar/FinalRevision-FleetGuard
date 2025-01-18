@@ -439,44 +439,19 @@ function updateInspectionDisplay() {
     }
     updateCharCount();
 
-    // Update photo preview and compress it
-	
-	/*async function handleImageProcessing(file) {
+    // Update photo preview
     const photoPreview = document.getElementById('photoPreview');
     if (photoPreview) {
-        const spinner = document.getElementById('imageLoadingSpinner');
-        spinner.style.display = 'block';
-        photoPreview.classList.add('processing');
-        
-        try {
-            const compressedImage = await compressImage(file);
-            photoPreview.src = compressedImage;
-            photoPreview.style.display = 'block';
-        } catch (error) {
-            console.error('Error processing image:', error);
-            showNotification('Error processing image', 'error');
-        } finally {
-            spinner.style.display = 'none';
-            photoPreview.classList.remove('processing');
-        }
-    }
-}/*
-	document.getElementById('uploadButton').addEventListener('click', async () => {
-    const fileInput = document.getElementById('fileInput');
-    if (fileInput.files && fileInput.files[0]) {
-        await handleImageProcessing(fileInput.files[0]);
-    }
-});
-    /*const photoPreview = document.getElementById('photoPreview');
-    if (photoPreview) {
-        if (currentData.photos?.length > 0) {
+        // Always clear the previous photo first
+        photoPreview.src = '';
+        photoPreview.style.display = 'none';
+
+        // Only show a photo if we have photos for this specific item
+        if (currentData.photos && currentData.photos.length > 0) {
             photoPreview.src = currentData.photos[currentData.photos.length - 1];
             photoPreview.style.display = 'block';
-        } else {
-            photoPreview.style.display = 'none';
-            photoPreview.src = '';
         }
-    }*/
+    }
 
     // Reset all status buttons and highlight the saved one if exists
     document.querySelectorAll('.status-btn').forEach(button => {
@@ -489,6 +464,66 @@ function updateInspectionDisplay() {
     // Validate next button if necessary
     validateNextButton(currentData.comment?.length || 0, 30, 150);
 }
+// Add this new function
+function calculateOverallCondition(inspectionData) {
+    const items = Object.values(inspectionData);
+    const totalItems = items.length;
+    let criticalCount = 0;
+    let warningCount = 0;
+    
+    items.forEach(item => {
+        if (item.status === 'critical') criticalCount++;
+        if (item.status === 'warning') warningCount++;
+    });
+    
+    // Calculate percentage:
+    // Each critical issue reduces by 20%
+    // Each warning reduces by 10%
+    const baseScore = 100;
+    const criticalDeduction = criticalCount * 20;
+    const warningDeduction = warningCount * 10;
+    
+    let overallScore = baseScore - criticalDeduction - warningDeduction;
+    overallScore = Math.max(0, Math.min(100, overallScore)); // Keep between 0-100
+    
+    return {
+        score: overallScore,
+        criticalCount,
+        warningCount
+    };
+}
+/*function updateInspectionDisplay() {
+    const item = inspectionItems[currentIndex];
+    if (!item) {
+        console.error('Invalid inspection index');
+        return;
+    }
+
+    // Retrieve current data for this item or set defaults
+    const currentData = currentInspectionData[item.id] || { comment: '', photos: [], status: null };
+
+    // Update UI elements
+    document.getElementById('currentName').textContent = `${item.icon} ${item.name[currentLanguage]}`;
+    document.getElementById('currentDescription').textContent = item.description[currentLanguage];
+
+    // Update comment box
+    const commentBox = document.getElementById('commentBox');
+    if (commentBox) {
+        commentBox.value = currentData.comment || '';
+    }
+    updateCharCount();
+
+    // Reset all status buttons and highlight the saved one if exists
+    document.querySelectorAll('.status-btn').forEach(button => {
+        button.classList.remove('active');
+        if (button.dataset.status === currentData.status) {
+            button.classList.add('active');
+        }
+    });
+
+    // Validate next button if necessary
+    validateNextButton(currentData.comment?.length || 0, 30, 150);
+}*/
 function updateProgressBar() {
     const progressBar = document.getElementById('progressBar');
     if (progressBar) {
@@ -745,6 +780,26 @@ function generateInspectionPDF(inspection) {
         });
         y += 10;
 
+	//overall metric
+	doc.setFontSize(14);
+	doc.setFont('helvetica', 'bold');
+	doc.text('Overall Vehicle Condition', 20, y);
+	y += 10;
+	
+	doc.setFontSize(12);
+	doc.setFont('helvetica', 'normal');
+	const condition = inspection.overallCondition;
+	const conditionText = [
+	    `Overall Score: ${condition.score.toFixed(1)}%`,
+	    `Critical Issues: ${condition.criticalCount}`,
+	    `Warning Issues: ${condition.warningCount}`
+	];
+	
+	conditionText.forEach(text => {
+	    doc.text(text, 20, y);
+	    y += 10;
+	});
+	y += 10;
         // Inspection Items Section
         Object.entries(inspection.data).forEach(([key, value]) => {
             const item = inspectionItems.find(i => i.id === key);
@@ -826,6 +881,7 @@ async function completeInspection() {
         date: new Date().toLocaleString(),
 	duration: duration,
         data: { ...currentInspectionData }
+	overallCondition: calculateOverallCondition(currentInspectionData)
     };
 
     // Add to records array
@@ -1595,7 +1651,11 @@ function displayUsers() {
 function updateMetricsDisplay() {
     // Get all inspection records
     const records = JSON.parse(localStorage.getItem('inspectionRecords') || '[]');
-    
+    const fleetConditions = records.map(record => record.overallCondition?.score || 0);
+    //calculate average overallcondition
+    const averageCondition = fleetConditions.length > 0
+    ? fleetConditions.reduce((acc, curr) => acc + curr, 0) / fleetConditions.length
+    : 0;
     // Calculate average inspection time
     const timesWithDuration = records.filter(record => record.duration);
     const averageTime = timesWithDuration.length > 0
@@ -1623,7 +1683,11 @@ function updateMetricsDisplay() {
     if (averageTimeDisplay) {
         averageTimeDisplay.textContent = formatTime(averageTime);
     }
-
+     // Update the overall condition card
+    const fleetConditionDisplay = document.getElementById('fleetConditionValue');
+    if (fleetConditionDisplay) {
+    fleetConditionDisplay.textContent = `${averageCondition.toFixed(1)}%`;
+    }
     // Destroy existing chart if it exists
     const existingChart = Chart.getChart('inspectionTimesChart');
     if (existingChart) {
@@ -1635,7 +1699,7 @@ function updateMetricsDisplay() {
         inspector,
         averageTime: times.reduce((acc, curr) => acc + curr, 0) / times.length
     }));
-
+    
     // Update the chart
     const ctx = document.getElementById('inspectionTimesChart');
     if (ctx && window.Chart) {
@@ -1663,6 +1727,32 @@ function updateMetricsDisplay() {
             }
         });
     }
+    // Create fleet condition chart
+    const fleetCtx = document.getElementById('fleetConditionChart');
+	if (fleetCtx && window.Chart) {
+	    new Chart(fleetCtx, {
+	        type: 'line',
+	        data: {
+	            labels: records.map(r => new Date(r.date).toLocaleDateString()),
+	            datasets: [{
+	                label: 'Vehicle Condition %',
+	                data: fleetConditions,
+	                borderColor: '#3b82f6',
+	                tension: 0.1
+	            }]
+	        },
+	        options: {
+	            responsive: true,
+	            scales: {
+	                y: {
+	                    beginAtZero: true,
+	                    max: 100
+	                }
+	            }
+	        }
+	    });
+	  }
+
 }
 /*function updateMetricsDisplay() {
     // Get all inspection records
