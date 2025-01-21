@@ -10,13 +10,12 @@
     <meta name="format-detection" content="telephone=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <!-- External Libraries -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script type="module">
-    import { supabase, testConnection } from './backend/supabaseClient.js';
-    window.supabase = supabase;
-    window.testConnection = testConnection;
-</script>
+    <!-- Estoy pasando mis variables de entorno de la base de datos -->
+    <meta name="supabase-url" content="%SUPABASE_URL%">
+    <meta name="supabase-anon-key" content="%SUPABASE_ANON_KEY%">
     <!-- Styles -->
     <link rel="stylesheet" href="cs/styles.css">
 </head>
