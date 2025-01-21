@@ -12,6 +12,11 @@
     <!-- External Libraries -->
     <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module">
+    import { supabase, testConnection } from './backend/supabaseClient.js';
+    window.supabase = supabase;
+    window.testConnection = testConnection;
+</script>
     <!-- Styles -->
     <link rel="stylesheet" href="cs/styles.css">
 </head>
