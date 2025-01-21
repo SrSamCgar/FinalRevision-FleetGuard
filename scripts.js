@@ -1077,7 +1077,6 @@ async function openCamera() {
     // Si no se requieren fotos, notificar y avanzar al siguiente ítem
     if (requiredPhotos === 0) {
         showNotification(`El ítem \"${item.name[currentLanguage]}\" no requiere fotos.`, 'info');
-        advanceToNextItem();
         return;
     }
  	// Inicializar el array de fotos si no existe
