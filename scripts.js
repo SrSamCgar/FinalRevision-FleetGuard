@@ -1232,6 +1232,92 @@ async function completeInspection() {
         localStorage.setItem('inspectionRecords', JSON.stringify(window.records));
 
         // Generar PDF
+        const pdfDoc = await generateInspectionPDF(inspectionRecord);
+        const pdfBlob = pdfDoc.output('blob');
+
+        // Crear nombre de archivo único
+        const timestamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
+        const filename = `inspection_${truckId}_${timestamp}.pdf`;
+
+        // Subir PDF al almacenamiento de Supabase
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('inspection-pdfs')
+            .upload(filename, pdfBlob, {
+                contentType: 'application/pdf',
+                cacheControl: '3600'
+            });
+
+        if (uploadError) throw uploadError;
+
+        // Obtener la URL pública del archivo PDF
+        const { data: { publicUrl }, error: publicUrlError } = supabase.storage
+            .from('inspection-pdfs')
+            .getPublicUrl(filename);
+
+        if (publicUrlError) throw publicUrlError;
+
+        // Guardar en la base de datos de Supabase
+        const { data: dbData, error: dbError } = await supabase
+            .from('inspections')
+            .insert([{
+                worker_id: currentWorker.id,
+                truck_id: truckId,
+                start_time: inspectionStartTime.toISOString(),
+                end_time: inspectionEndTime.toISOString(),
+                duration: duration,
+                overall_condition: inspectionRecord.overallCondition.score,
+                critical_count: inspectionRecord.overallCondition.criticalCount,
+                warning_count: inspectionRecord.overallCondition.warningCount,
+                pdf_url: publicUrl,
+                status: 'completed'
+            }])
+            .single();
+
+        if (dbError) throw dbError;
+
+        // Notificación de éxito
+        showNotification('Inspection completed and saved successfully', 'success');
+
+        // Mostrar pantalla de registros y actualizar la interfaz
+        showScreen('recordsScreen');
+        displayRecords();
+
+        // Limpiar imágenes al finalizar
+        cleanupImages();
+
+    } catch (error) {
+        console.error('Error completing inspection:', error);
+        showNotification('Error completing inspection: ' + error.message, 'error');
+    }
+}
+
+/*async function completeInspection() {
+    try {
+        // Marca el fin de la inspección
+        inspectionEndTime = new Date();
+        const duration = (inspectionEndTime - inspectionStartTime) / 1000; // Duración en segundos
+        const truckId = document.getElementById('truckId').value.trim();
+
+        // Crear registro de inspección
+        const inspectionRecord = {
+            worker: currentWorker.name,
+            truckId: truckId,
+            date: new Date().toLocaleString(),
+            duration: duration,
+            data: { ...currentInspectionData },
+            overallCondition: calculateOverallCondition(currentInspectionData)
+        };
+
+        // Agregar registro al array global de registros
+        if (!Array.isArray(window.records)) {
+            window.records = [];
+        }
+        window.records.push(inspectionRecord);
+
+        // Guardar en localStorage
+        localStorage.setItem('inspectionRecords', JSON.stringify(window.records));
+
+        // Generar PDF
         const pdfUrl = await generateInspectionPDF(inspectionRecord);
         showNotification('Inspection completed and PDF generated', 'success');
 
@@ -1263,7 +1349,7 @@ async function completeInspection() {
         console.error('Error completing inspection:', error);
         showNotification('Error completing inspection', 'error');
     }
-}
+}*/
 
 /*async function completeInspection() {
 	inspectionEndTime = new Date();
