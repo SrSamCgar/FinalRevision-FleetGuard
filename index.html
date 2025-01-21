@@ -53,8 +53,8 @@
         </div>
     </div>
 
-    <!-- Truck ID Screen -->
-    <div id="truckIdScreen" class="screen container">
+    <!-- Truck ID Screen comentado por cambios-->
+    <!-- <div id="truckIdScreen" class="screen container">
         <div class="card">
             <h2 class="title">
                 <span data-lang="en">Enter Truck ID</span>
@@ -71,7 +71,31 @@
                 <span data-lang="es">Iniciar Inspección</span>
             </button>
         </div>
+    </div>-->
+
+<!-- Dropdownlist de los camiones disponibles-->
+<div id="truckIdScreen" class="screen container">
+    <div class="card">
+        <h2 class="title">
+            <span data-lang="en">Select Truck</span>
+            <span data-lang="es">Seleccionar Camión</span>
+        </h2>
+        <div class="input-group">
+            <select id="truckId" 
+                    class="form-select" 
+                    required>
+                <option value="">
+                    <span data-lang="en">Select a truck</span>
+                    <span data-lang="es">Seleccione un camión</span>
+                </option>
+            </select>
+        </div>
+        <button class="btn" onclick="startInspection()">
+            <span data-lang="en">Start Inspection</span>
+            <span data-lang="es">Iniciar Inspección</span>
+        </button>
     </div>
+</div>
 
     <!-- Inspection Screen -->
     <div id="inspectionScreen" class="screen container">
