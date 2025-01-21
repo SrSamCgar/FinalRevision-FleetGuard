@@ -435,7 +435,125 @@ async function validateAndGetTruck(truckId) {
         showScreen('truckIdScreen');
     }
 }*/
+window.login = async function() {
+    try {
+        const workerId = document.getElementById('workerId')?.value?.trim();
+        const password = document.getElementById('workerPassword')?.value?.trim();
 
+        if (!workerId || !password) {
+            throw new Error('Please fill in both fields');
+        }
+
+        // Sign in with Supabase auth
+        const { data: { user, session }, error: authError } = await supabase.auth.signInWithPassword({
+            email: workerId + '@fleetguard.com', // Using workerId as email prefix
+            password: password
+        });
+
+        if (authError) throw authError;
+
+        // Get worker profile
+        const { data: worker, error: workerError } = await supabase
+            .from('workers')
+            .select('*')
+            .eq('id', workerId)
+            .single();
+
+        if (workerError) throw workerError;
+
+        if (!worker) {
+            throw new Error('Worker profile not found');
+        }
+
+        // Check if account is active
+        if (worker.status !== 'active') {
+            throw new Error('Account is inactive');
+        }
+
+        // Set current worker
+        currentWorker = worker;
+
+        // Update last login and activity
+        const { error: updateError } = await supabase
+            .from('workers')
+            .update({ 
+                last_login: new Date().toISOString(),
+                last_activity: new Date().toISOString()
+            })
+            .eq('id', workerId);
+
+        if (updateError) throw updateError;
+
+        // Store session token
+        localStorage.setItem('supabase.auth.token', session.access_token);
+
+        // Show welcome notification
+        showNotification(`Welcome, ${currentWorker.name}!`, 'success');
+
+        // Navigate based on role
+        if (currentWorker.role === 'admin') {
+            showAdminDashboard();
+        } else {
+            showScreen('truckIdScreen');
+            // Load available trucks for selection
+            loadAvailableTrucks();
+        }
+
+    } catch (error) {
+        console.error('Login error:', error);
+        showNotification(error.message, 'error');
+    }
+}
+//Session Check
+async function checkSession() {
+    const token = localStorage.getItem('supabase.auth.token');
+    
+    if (!token) {
+        return false;
+    }
+
+    try {
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+        
+        if (error || !user) {
+            localStorage.removeItem('supabase.auth.token');
+            return false;
+        }
+
+        // Get worker profile
+        const { data: worker } = await supabase
+            .from('workers')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+        if (worker) {
+            currentWorker = worker;
+            return true;
+        }
+
+        return false;
+    } catch (error) {
+        console.error('Session check error:', error);
+        return false;
+    }
+}
+
+// Add this to your initialization code
+document.addEventListener('DOMContentLoaded', async () => {
+    const isSessionValid = await checkSession();
+    if (!isSessionValid) {
+        showScreen('loginScreen');
+    } else {
+        if (currentWorker.role === 'admin') {
+            showAdminDashboard();
+        } else {
+            showScreen('truckIdScreen');
+            loadAvailableTrucks();
+        }
+    }
+});
+//Start Demo User
 window.startDemoMode = function() {
     currentWorker = { 
         id: '000', 
@@ -648,19 +766,25 @@ async function loadAvailableTrucks() {
 
         if (error) throw error;
 
-        // Update the truck selection UI
         const truckSelect = document.getElementById('truckId');
         if (truckSelect) {
-            truckSelect.innerHTML = `
-                <option value="">Select a truck</option>
-                ${trucks.map(truck => `
-                    <option value="${truck.id}">
-                        ${truck.id} - ${truck.model} (${truck.year})
-                    </option>
-                `).join('')}
-            `;
-        }
+            // Clear existing options
+            truckSelect.innerHTML = '';
 
+            // Add default option
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = currentLanguage === 'en' ? 'Select a truck' : 'Seleccione un camión';
+            truckSelect.appendChild(defaultOption);
+
+            // Add truck options
+            trucks.forEach(truck => {
+                const option = document.createElement('option');
+                option.value = truck.id;
+                option.textContent = `${truck.id} - ${truck.model} (${truck.year})`;
+                truckSelect.appendChild(option);
+            });
+        }
     } catch (error) {
         console.error('Error loading trucks:', error);
         showNotification('Error loading available trucks', 'error');
@@ -2384,7 +2508,39 @@ function showNotification(message, type = 'success') {
     }, 3000);
 }
 // New function for handling back to login
-function backToLogin() {
+async function backToLogin() {
+    if (confirm('Are you sure you want to logout?')) {
+        try {
+            // Sign out from Supabase
+            const { error } = await supabase.auth.signOut();
+            if (error) throw error;
+
+            // Clear local storage and state
+            localStorage.removeItem('supabase.auth.token');
+            currentWorker = null;
+
+            // Hide admin menu
+            const menuBtn = document.getElementById('menuToggleBtn');
+            const sidebar = document.getElementById('adminSidebar');
+            if (menuBtn) menuBtn.style.display = 'none';
+            if (sidebar) sidebar.classList.remove('open');
+
+            // Reset any open screens
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.style.display = 'none';
+            });
+
+            // Show login screen
+            showScreen('loginScreen');
+
+            showNotification('Logged out successfully', 'success');
+        } catch (error) {
+            console.error('Logout error:', error);
+            showNotification('Error logging out', 'error');
+        }
+    }
+}
+/*function backToLogin() {
     if (confirm('Are you sure you want to logout?')) {
         currentWorker = null;
         // Hide admin menu
@@ -2404,7 +2560,7 @@ function backToLogin() {
         // Clear any stored data
         localStorage.removeItem('currentWorker');
     }
-}
+}*/
 
 function showInspectionRecords() {
     // First toggle the sidebar
