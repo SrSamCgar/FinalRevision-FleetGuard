@@ -603,13 +603,15 @@ body {
 /* Container Layouts */
 .admin-container {
     width: 100%;
-    max-width: 1200px; /* Changed from 600px */
+    max-width: 1200px;
     margin: 0 auto;
     padding: var(--spacing-md);
     min-height: 100vh;
-    padding-bottom: 80px;
+    padding-bottom: 120px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    height: 100vh;
+    position: relative;
 }
 .container {
     width: 100%;
