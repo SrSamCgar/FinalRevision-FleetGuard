@@ -43,6 +43,14 @@ async function handleImageProcessing(file) {
         if (photoPreview) photoPreview.classList.remove('processing');
     }
 }
+//event listeners
+document.addEventListener('DOMContentLoaded', () => {
+    const loginBtn = document.querySelector('.btn:not(.btn-secondary)');
+    const demoBtn = document.querySelector('.btn.btn-secondary');
+    
+    if(loginBtn) loginBtn.addEventListener('click', login);
+    if(demoBtn) demoBtn.addEventListener('click', startDemoMode);
+});
 // Configuration Data
 const workers = {
     '1234': { id: '003', name: 'Juan Ramon', password: 'abcd1234', role: 'user', inspections: [], status: 'active' },
@@ -210,7 +218,46 @@ function setupEventListeners() {
 // Initialize on load
 document.addEventListener('DOMContentLoaded', initializeApp);
 // Authentication Functions
-function login() {
+async function login() {
+    try {
+        const workerId = document.getElementById('workerId')?.value?.trim();
+        const password = document.getElementById('workerPassword')?.value?.trim();
+
+        if (!workerId || !password) {
+            throw new Error('Please fill in both fields');
+        }
+
+        if (!workers[workerId] || workers[workerId].password !== password) {
+            throw new Error('Invalid credentials');
+        }
+
+        // Set current worker
+        currentWorker = workers[workerId];
+
+        // Display welcome notification
+        showNotification(`Welcome, ${currentWorker.name}!`, 'success');
+
+        // Close modals and hide screens
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.style.display = 'none';
+        });
+
+        document.querySelectorAll('.screen').forEach(screen => {
+            screen.style.display = 'none';
+            screen.classList.remove('active');
+        });
+
+        // Navigate based on role
+        if (currentWorker.role === 'admin') {
+            showAdminDashboard();
+        } else {
+            showScreen('truckIdScreen');
+        }
+    } catch (error) {
+        handleError(error, 'login');
+    }
+}
+/*function login() {
     const workerId = document.getElementById('workerId')?.value?.trim();
     const password = document.getElementById('workerPassword')?.value?.trim();
 
@@ -319,7 +366,7 @@ function resetScreens() {
     if (commentBox) {
         commentBox.value = '';
     }
-}
+}*/
 
 // Language and Theme Management
 function toggleLanguage() {
@@ -363,7 +410,7 @@ function updateLanguage() {
         }
     });
 }
-// Add to your existing showSettings function
+//  showSettings function
 function showSettings() {
     toggleSidebar();
     showScreen('settingsScreen');
@@ -464,7 +511,7 @@ function updateInspectionDisplay() {
     // Validate next button if necessary
     validateNextButton(currentData.comment?.length || 0, 30, 150);
 }
-// Add this new function
+// Add overall condition
 function calculateOverallCondition(inspectionData) {
     const items = Object.values(inspectionData);
     const totalItems = items.length;
@@ -492,6 +539,78 @@ function calculateOverallCondition(inspectionData) {
         warningCount
     };
 }
+//session manager
+const SessionManager = {
+    timeout: 30 * 60 * 1000, // 30 minutes
+    timer: null,
+
+    startSession: () => {
+        SessionManager.resetTimer();
+        document.addEventListener('mousemove', SessionManager.resetTimer);
+        document.addEventListener('keypress', SessionManager.resetTimer);
+    },
+
+    resetTimer: () => {
+        clearTimeout(SessionManager.timer);
+        SessionManager.timer = setTimeout(() => {
+            showNotification('Session expired. Please login again.', 'warning');
+            backToLogin();
+        }, SessionManager.timeout);
+    },
+
+    endSession: () => {
+        clearTimeout(SessionManager.timer);
+        document.removeEventListener('mousemove', SessionManager.resetTimer);
+        document.removeEventListener('keypress', SessionManager.resetTimer);
+    }
+};
+//Loading states
+function setLoadingState(isLoading, elementId) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+
+    const originalText = element.innerText;
+    
+    if (isLoading) {
+        element.disabled = true;
+        element.innerHTML = '<span class="loading-spinner"></span> Loading...';
+    } else {
+        element.disabled = false;
+        element.innerText = originalText;
+    }
+}
+//validate input
+function validateInput(value, type) {
+    const patterns = {
+        workerId: /^\d{4,6}$/,
+        password: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,12}$/,
+        truckId: /^[A-Z]\d{3}$/
+    };
+
+    return patterns[type]?.test(value) || false;
+}
+//Storage management
+const StorageManager = {
+    save: async (key, data) => {
+        try {
+            localStorage.setItem(key, JSON.stringify(data));
+            return true;
+        } catch (error) {
+            handleError(error, 'StorageManager.save');
+            return false;
+        }
+    },
+    
+    get: async (key) => {
+        try {
+            const data = localStorage.getItem(key);
+            return data ? JSON.parse(data) : null;
+        } catch (error) {
+            handleError(error, 'StorageManager.get');
+            return null;
+        }
+    }
+};
 /*function updateInspectionDisplay() {
     const item = inspectionItems[currentIndex];
     if (!item) {
@@ -875,14 +994,14 @@ async function completeInspection() {
     const truckId = document.getElementById('truckId').value.trim();
     
     // Create inspection record
-    const inspectionRecord = {
-        worker: currentWorker.name,
-        truckId: truckId,
-        date: new Date().toLocaleString(),
-	duration: duration,
-        data: { ...currentInspectionData }
-	overallCondition: calculateOverallCondition(currentInspectionData)
-    };
+	const inspectionRecord = {
+	    worker: currentWorker.name,
+	    truckId: truckId,
+	    date: new Date().toLocaleString(),
+	    duration: duration,
+	    data: { ...currentInspectionData },
+	    overallCondition: calculateOverallCondition(currentInspectionData)
+	};
 
     // Add to records array
     if (!Array.isArray(window.records)) {
@@ -2159,6 +2278,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize any other necessary components
     setupEventListeners();
 });
+//error handler
+function handleError(error, context) {
+    console.error(`Error in ${context}:`, error);
+    showNotification(`Error: ${error.message}`, 'error');
+}
 // Export functions to window
 Object.assign(window, {
     login,
