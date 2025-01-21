@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
-
-// These will be replaced by the actual environment variables in production
-const supabaseUrl = process.env.SUPABASE_URL || 'your_fallback_url'
-const supabaseKey = process.env.SUPABASE_ANON_KEY || 'your_fallback_key'
-
-export const supabase = createClient(supabaseUrl, supabaseKey)
+const supabase = supabase.createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_ANON_KEY
+);
 
 // Helper function to test connection
 export async function testConnection() {
