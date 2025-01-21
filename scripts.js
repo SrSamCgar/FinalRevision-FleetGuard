@@ -275,7 +275,7 @@ function setupEventListeners() {
 // Initialize on load
 document.addEventListener('DOMContentLoaded', initializeApp);
 // Authentication Functions
-async function login() {
+window.login = async function() {
     try {
         const workerId = document.getElementById('workerId')?.value?.trim();
         const password = document.getElementById('workerPassword')?.value?.trim();
@@ -434,7 +434,7 @@ async function validateAndGetTruck(truckId) {
     }
 }*/
 
-function startDemoMode() {
+window.startDemoMode = function() {
     currentWorker = { 
         id: '000', 
         name: 'Demo User', 
@@ -2592,7 +2592,6 @@ function handleError(error, context) {
     showNotification(`Error: ${error.message}`, 'error');
 }
 // Export functions to window
-window.login = login;
 window.startDemoMode = startDemoMode;
 Object.assign(window, {
     login,
