@@ -44,13 +44,13 @@ async function handleImageProcessing(file) {
     }
 }
 //event listeners
-document.addEventListener('DOMContentLoaded', () => {
+function initializeLoginButtons() {
     const loginBtn = document.querySelector('.btn:not(.btn-secondary)');
     const demoBtn = document.querySelector('.btn.btn-secondary');
     
     if(loginBtn) loginBtn.addEventListener('click', login);
     if(demoBtn) demoBtn.addEventListener('click', startDemoMode);
-});
+}
 // Configuration Data
 const workers = {
     '1234': { id: '003', name: 'Juan Ramon', password: 'abcd1234', role: 'user', inspections: [], status: 'active' },
@@ -291,7 +291,7 @@ async function login() {
     } else {
         showScreen('truckIdScreen');
     }
-}
+}*/
 
 function startDemoMode() {
     currentWorker = { 
@@ -366,7 +366,7 @@ function resetScreens() {
     if (commentBox) {
         commentBox.value = '';
     }
-}*/
+}
 
 // Language and Theme Management
 function toggleLanguage() {
@@ -2271,6 +2271,7 @@ const CacheManager = {
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize buttons
     initializeStatusButtons();
+    initializeLoginButtons(); // Add this line
     
     // Initial language update
     updateLanguage();
@@ -2278,6 +2279,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize any other necessary components
     setupEventListeners();
 });
+
 //error handler
 function handleError(error, context) {
     console.error(`Error in ${context}:`, error);
