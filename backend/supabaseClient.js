@@ -1,5 +1,6 @@
+import { createClient } from '@supabase/supabase-js';
 
-export const supabase = supabase.createClient(
+export const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_ANON_KEY
 );
@@ -10,13 +11,13 @@ export async function testConnection() {
         const { data, error } = await supabase
             .from('workers')
             .select('count')
-            .single()
+            .single();
         
-        if (error) throw error
-        console.log('Supabase connection successful')
-        return true
+        if (error) throw error;
+        console.log('Supabase connection successful');
+        return true;
     } catch (error) {
-        console.error('Supabase connection failed:', error.message)
-        return false
+        console.error('Supabase connection failed:', error.message);
+        return false;
     }
 }
