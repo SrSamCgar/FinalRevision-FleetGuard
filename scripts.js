@@ -2506,6 +2506,8 @@ function handleError(error, context) {
     showNotification(`Error: ${error.message}`, 'error');
 }
 // Export functions to window
+window.login = login;
+window.startDemoMode = startDemoMode;
 Object.assign(window, {
     login,
     startDemoMode,
