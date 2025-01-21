@@ -9,6 +9,62 @@ let currentItemStatus = null;
 let lastCaptureTime = 0;
 let inspectionStartTime = null;
 let inspectionEndTime = null;
+//add event listeners
+document.addEventListener('DOMContentLoaded', () => {
+    // Elementos de búsqueda y filtro
+    const searchInput = document.getElementById('recordSearchInput');
+    const filterSelect = document.getElementById('recordFilterStatus');
+    const prevPageButton = document.getElementById('prevPage');
+    const nextPageButton = document.getElementById('nextPage');
+
+    // Configurar eventos para el campo de búsqueda
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(() => {
+            currentPage = 1;
+            displayRecords(currentPage);
+        }, 300));
+    }
+
+    // Configurar eventos para el filtro
+    if (filterSelect) {
+        filterSelect.addEventListener('change', () => {
+            currentPage = 1;
+            displayRecords(currentPage);
+        });
+    }
+
+    // Configurar eventos de paginación
+    if (prevPageButton) {
+        prevPageButton.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                displayRecords(currentPage);
+            }
+        });
+    }
+
+    if (nextPageButton) {
+        nextPageButton.addEventListener('click', () => {
+            const records = filterRecords();
+            const totalPages = Math.ceil(records.length / recordsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                displayRecords(currentPage);
+            }
+        });
+    }
+
+    // Inicializar botones y otros componentes
+    initializeStatusButtons();
+    initializeLoginButtons();
+
+    // Actualizar el idioma al cargar
+    updateLanguage();
+
+    // Cualquier configuración adicional
+    setupEventListeners();
+});
+
 //declarada al inicio para evitar errores
 async function handleImageProcessing(file) {
     if (!file) {
@@ -228,6 +284,90 @@ async function login() {
             throw new Error('Please fill in both fields');
         }
 
+        // Query the workers table
+        const { data: worker, error } = await supabase
+            .from('workers')
+            .select('*')
+            .eq('id', workerId)
+            .single();
+
+        if (error) throw error;
+
+        if (!worker) {
+            throw new Error('Invalid credentials');
+        }
+
+        // Here you should use proper password hashing
+        // This is just for example, use bcrypt or similar in production
+        if (worker.password_hash !== password) {
+            throw new Error('Invalid credentials');
+        }
+
+        // Check if account is active
+        if (worker.status !== 'active') {
+            throw new Error('Account is inactive');
+        }
+
+        // Set current worker
+        currentWorker = worker;
+
+        // Update last login timestamp
+        const { error: updateError } = await supabase
+            .from('workers')
+            .update({ 
+                last_login: new Date().toISOString(),
+                last_activity: new Date().toISOString()
+            })
+            .eq('id', workerId);
+
+        if (updateError) throw updateError;
+
+        // Display welcome notification
+        showNotification(`Welcome, ${currentWorker.name}!`, 'success');
+
+        // Navigate based on role
+        if (currentWorker.role === 'admin') {
+            showAdminDashboard();
+        } else {
+            showScreen('truckIdScreen');
+        }
+
+    } catch (error) {
+        console.error('Login error:', error);
+        showNotification(error.message, 'error');
+    }
+}
+//validate truckiD 
+async function validateAndGetTruck(truckId) {
+    try {
+        const { data: truck, error } = await supabase
+            .from('trucks')
+            .select('*')
+            .eq('id', truckId)
+            .eq('status', 'active')  // Only get active trucks
+            .single();
+
+        if (error) throw error;
+        
+        if (!truck) {
+            throw new Error('Invalid or inactive truck ID');
+        }
+
+        return truck;
+    } catch (error) {
+        console.error('Truck validation error:', error);
+        throw error;
+    }
+}
+/*async function login() {
+    try {
+        const workerId = document.getElementById('workerId')?.value?.trim();
+        const password = document.getElementById('workerPassword')?.value?.trim();
+
+        if (!workerId || !password) {
+            throw new Error('Please fill in both fields');
+        }
+
         if (!workers[workerId] || workers[workerId].password !== password) {
             throw new Error('Invalid credentials');
         }
@@ -257,7 +397,7 @@ async function login() {
     } catch (error) {
         handleError(error, 'login');
     }
-}
+}*/
 /*function login() {
     const workerId = document.getElementById('workerId')?.value?.trim();
     const password = document.getElementById('workerPassword')?.value?.trim();
@@ -424,7 +564,7 @@ function showSettings() {
     document.getElementById('themePreference').value = savedTheme;
 }
 // Inspection Management
-function startInspection() {
+/*function startInspection() {
 	inspectionStartTime = new Date();
     const truckId = document.getElementById('truckId').value.trim();
 
@@ -439,6 +579,90 @@ function startInspection() {
     showScreen('inspectionScreen');
     updateInspectionDisplay();
     updateProgressBar();
+}*/
+async function startInspection() {
+    try {
+        // Registrar la hora de inicio de la inspección
+        inspectionStartTime = new Date();
+        const truckId = document.getElementById('truckId').value.trim();
+
+        // Validar si el ID del camión es válido desde una base de datos o local
+        let truck;
+        if (trucks && trucks[truckId]) {
+            // Validación local
+            truck = trucks[truckId];
+        } else {
+            // Validación desde Supabase o fuente externa
+            truck = await validateAndGetTruck(truckId);
+        }
+
+        if (!truck) {
+            throw new Error('Invalid truck ID. Please try again.');
+        }
+
+        showNotification(`Truck selected: ${truck.model}, ${truck.year}`, 'success');
+
+        // Crear un registro inicial de inspección en la base de datos
+        const { data: inspection, error } = await supabase
+            .from('inspections')
+            .insert([{
+                worker_id: currentWorker.id,
+                truck_id: truckId,
+                start_time: inspectionStartTime.toISOString(),
+                status: 'in_progress'
+            }])
+            .single();
+
+        if (error) throw error;
+
+        // Guardar el ID de la inspección para usarlo más adelante
+        currentInspectionData.inspectionId = inspection.id;
+
+        // Reiniciar estado de inspección
+        resetInspection();
+
+        // Cambiar a la pantalla de inspección
+        showScreen('inspectionScreen');
+
+        // Actualizar elementos visuales
+        updateInspectionDisplay();
+        updateProgressBar();
+
+        console.log(`Inspection started for Truck ID: ${truckId}`);
+        console.log(`Model: ${truck.model}, Year: ${truck.year}`);
+    } catch (error) {
+        console.error('Start inspection error:', error);
+        showNotification(error.message || 'Error starting inspection', 'error');
+    }
+}
+//Obtenemos los camiones disponibles para verificar
+async function loadAvailableTrucks() {
+    try {
+        const { data: trucks, error } = await supabase
+            .from('trucks')
+            .select('*')
+            .eq('status', 'active')
+            .order('id');
+
+        if (error) throw error;
+
+        // Update the truck selection UI
+        const truckSelect = document.getElementById('truckId');
+        if (truckSelect) {
+            truckSelect.innerHTML = `
+                <option value="">Select a truck</option>
+                ${trucks.map(truck => `
+                    <option value="${truck.id}">
+                        ${truck.id} - ${truck.model} (${truck.year})
+                    </option>
+                `).join('')}
+            `;
+        }
+
+    } catch (error) {
+        console.error('Error loading trucks:', error);
+        showNotification('Error loading available trucks', 'error');
+    }
 }
 
 function resetInspection() {
@@ -721,13 +945,6 @@ function setItemStatus(status) {
     updateCharCount();
 }*/
 
-// Add event listeners to status buttons
-document.querySelectorAll('.status-btn').forEach(button => {
-    button.addEventListener('click', function() {
-        const status = this.getAttribute('data-status');
-        setItemStatus(status);
-    });
-});
 /*document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.status-btn').forEach(button => {
         button.addEventListener('click', function(event) {
@@ -1496,17 +1713,7 @@ function displayRecords(page = 1) {
     // Update language display
     updateLanguage();
 }
-// Add event listeners
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('recordSearchInput')?.addEventListener('input', 
-        debounce(() => displayRecords(1), 300));
-    document.getElementById('recordFilterStatus')?.addEventListener('change', 
-        () => displayRecords(1));
-    document.getElementById('prevPage')?.addEventListener('click', 
-        () => displayRecords(--currentPage));
-    document.getElementById('nextPage')?.addEventListener('click', 
-        () => displayRecords(++currentPage));
-});
+
 /*function displayRecords() {
     const recordsContainer = document.getElementById('recordsContainer');
     if (!recordsContainer) return;
@@ -2110,42 +2317,7 @@ function backToLogin() {
         localStorage.removeItem('currentWorker');
     }
 }
-// Initialize records screen events
-document.addEventListener('DOMContentLoaded', () => {
-    const searchInput = document.getElementById('recordSearchInput');
-    const filterSelect = document.getElementById('recordFilterStatus');
-    
-    if (searchInput) {
-        searchInput.addEventListener('input', () => {
-            currentPage = 1;
-            displayRecords(currentPage);
-        });
-    }
-    
-    if (filterSelect) {
-        filterSelect.addEventListener('change', () => {
-            currentPage = 1;
-            displayRecords(currentPage);
-        });
-    }
-    
-    // Initialize pagination buttons
-    document.getElementById('prevPage')?.addEventListener('click', () => {
-        if (currentPage > 1) {
-            currentPage--;
-            displayRecords(currentPage);
-        }
-    });
-    
-    document.getElementById('nextPage')?.addEventListener('click', () => {
-        const records = filterRecords();
-        const totalPages = Math.ceil(records.length / recordsPerPage);
-        if (currentPage < totalPages) {
-            currentPage++;
-            displayRecords(currentPage);
-        }
-    });
-});
+
 function showInspectionRecords() {
     // First toggle the sidebar
     toggleSidebar();
@@ -2327,17 +2499,6 @@ const CacheManager = {
         }
     }
 };
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize buttons
-    initializeStatusButtons();
-    initializeLoginButtons(); // Add this line
-    
-    // Initial language update
-    updateLanguage();
-    
-    // Initialize any other necessary components
-    setupEventListeners();
-});
 
 //error handler
 function handleError(error, context) {
