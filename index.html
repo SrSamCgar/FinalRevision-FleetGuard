@@ -12,6 +12,7 @@
     <!-- External Libraries -->
     <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Styles -->
     <link rel="stylesheet" href="cs/styles.css">
 </head>
@@ -80,16 +81,14 @@
             <span data-lang="en">Select Truck</span>
             <span data-lang="es">Seleccionar Camión</span>
         </h2>
-        <div class="input-group">
-            <select id="truckId" 
-                    class="form-select" 
-                    required>
-                <option value="">
-                    <span data-lang="en">Select a truck</span>
-                    <span data-lang="es">Seleccione un camión</span>
-                </option>
-            </select>
-        </div>
+            <div class="input-group">
+                    <select id="truckId" 
+                            class="form-select" 
+                            required>
+                        <option value="" data-lang="en">Select a truck</option>
+                        <option value="" data-lang="es">Seleccione un camión</option>
+                    </select>
+            </div>
         <button class="btn" onclick="startInspection()">
             <span data-lang="en">Start Inspection</span>
             <span data-lang="es">Iniciar Inspección</span>
