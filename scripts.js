@@ -1,3 +1,4 @@
+import { supabase } from './backend/supabaseClient.js';
 // Core Variables
 let currentLanguage = 'es';
 let currentTheme = 'light';
@@ -987,8 +988,67 @@ function generateInspectionPDF(inspection) {
         return false;
     }
 }
-
 async function completeInspection() {
+    try {
+        // Marca el fin de la inspección
+        inspectionEndTime = new Date();
+        const duration = (inspectionEndTime - inspectionStartTime) / 1000; // Duración en segundos
+        const truckId = document.getElementById('truckId').value.trim();
+
+        // Crear registro de inspección
+        const inspectionRecord = {
+            worker: currentWorker.name,
+            truckId: truckId,
+            date: new Date().toLocaleString(),
+            duration: duration,
+            data: { ...currentInspectionData },
+            overallCondition: calculateOverallCondition(currentInspectionData)
+        };
+
+        // Agregar registro al array global de registros
+        if (!Array.isArray(window.records)) {
+            window.records = [];
+        }
+        window.records.push(inspectionRecord);
+
+        // Guardar en localStorage
+        localStorage.setItem('inspectionRecords', JSON.stringify(window.records));
+
+        // Generar PDF
+        const pdfUrl = await generateInspectionPDF(inspectionRecord);
+        showNotification('Inspection completed and PDF generated', 'success');
+
+        // Guardar en Supabase
+        const { data, error } = await supabase
+            .from('inspections')
+            .insert([{
+                worker_id: currentWorker.id,
+                truck_id: truckId,
+                start_time: inspectionStartTime.toISOString(),
+                end_time: inspectionEndTime.toISOString(),
+                pdf_url: pdfUrl, // URL del PDF generado
+                status: 'completed'
+            }])
+            .single();
+
+        if (error) throw error;
+
+        // Notificación de éxito
+        showNotification('Inspection saved to database', 'success');
+
+        // Mostrar pantalla de registros
+        showScreen('recordsScreen');
+        displayRecords();
+
+        // Limpiar imágenes al finalizar
+        cleanupImages();
+    } catch (error) {
+        console.error('Error completing inspection:', error);
+        showNotification('Error completing inspection', 'error');
+    }
+}
+
+/*async function completeInspection() {
 	inspectionEndTime = new Date();
     const duration = (inspectionEndTime - inspectionStartTime) / 1000; // in seconds
     const truckId = document.getElementById('truckId').value.trim();
@@ -1023,7 +1083,7 @@ async function completeInspection() {
     showScreen('recordsScreen');
     displayRecords();
 cleanupImages();
-}
+}*/
 
 function validateNextButton(charCount, minCharLimit, maxCharLimit) {
     const nextButton = document.getElementById('nextButton');
