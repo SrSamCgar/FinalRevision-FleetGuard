@@ -1,4 +1,4 @@
-import { supabase } from './backend/supabaseClient.js';
+import { DatabaseService } from './js/db.js';
 // Core Variables
 let currentLanguage = 'es';
 let currentTheme = 'light';
