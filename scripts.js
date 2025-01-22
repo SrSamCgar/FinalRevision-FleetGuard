@@ -227,6 +227,56 @@ async function login() {
             throw new Error('Please fill in both fields');
         }
 
+        const response = await fetch('/api/auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ workerId, password }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Invalid credentials');
+        }
+
+        // Set current worker
+        currentWorker = data.user;
+        showNotification(`Welcome, ${currentWorker.name}!`, 'success');
+
+        // Close modals and hide screens
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.style.display = 'none';
+        });
+        document.querySelectorAll('.screen').forEach(screen => {
+            screen.style.display = 'none';
+            screen.classList.remove('active');
+        });
+
+        // Update last login
+        await fetch('/api/updateLastLogin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ workerId: currentWorker.id }),
+        });
+
+        // Navigate based on role
+        if (currentWorker.role === 'admin') {
+            showAdminDashboard();
+        } else {
+            showScreen('truckIdScreen');
+        }
+    } catch (error) {
+        handleError(error, 'login');
+    }
+}
+/*async function login() {
+    try {
+        const workerId = document.getElementById('workerId')?.value?.trim();
+        const password = document.getElementById('workerPassword')?.value?.trim();
+
+        if (!workerId || !password) {
+            throw new Error('Please fill in both fields');
+        }
+
         if (!workers[workerId] || workers[workerId].password !== password) {
             throw new Error('Invalid credentials');
         }
@@ -256,7 +306,7 @@ async function login() {
     } catch (error) {
         handleError(error, 'login');
     }
-}
+}*/
 /*function login() {
     const workerId = document.getElementById('workerId')?.value?.trim();
     const password = document.getElementById('workerPassword')?.value?.trim();
