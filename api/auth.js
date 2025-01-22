@@ -194,43 +194,74 @@ export default async function handler(req, res) {
     })
   }
 }*/
+import { createClient } from '@supabase/supabase-js';
+
+// Configurar Supabase con las variables de entorno
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+);
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Extraer workerId y password del cuerpo de la solicitud
   const { workerId, password } = req.body;
 
+  // Validar si los campos están presentes
   if (!workerId || !password) {
+    console.error('Missing workerId or password in request');
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
   try {
+    // Consulta a Supabase para obtener los datos del usuario
     const { data, error } = await supabase
       .from('workers')
       .select('*')
       .eq('id', workerId)
-      .maybeSingle();
+      .maybeSingle(); // Espera un único resultado o null
 
+    // Verificar si hubo un error en la consulta
     if (error) {
       console.error('Supabase error:', error);
-      return res.status(500).json({ error: 'Database query error', details: error.message });
+      return res.status(500).json({
+        error: 'Database query error',
+        details: error.message,
+      });
     }
 
+    // Verificar si el workerId no fue encontrado
     if (!data) {
+      console.error(`Worker ID ${workerId} not found`);
       return res.status(401).json({ error: 'Invalid worker ID' });
     }
 
+    // Registrar contraseñas para depuración
+    console.log('Password from request:', password);
+    console.log('Password from database:', data.password_hash);
+
     // Comparar la contraseña ingresada con la almacenada
     if (data.password_hash !== password) {
+      console.error('Password does not match');
       return res.status(401).json({ error: 'Invalid password' });
     }
 
+    // Si todo es correcto, autenticación exitosa
     console.log('Query successful, user authenticated:', !!data);
-    return res.status(200).json({ message: 'Authenticated successfully', user: data });
+    return res.status(200).json({
+      message: 'Authenticated successfully',
+      user: data,
+    });
   } catch (error) {
+    // Manejar errores del servidor
     console.error('Server error:', error);
-    return res.status(500).json({ error: 'Server error', details: error.message });
+    return res.status(500).json({
+      error: 'Server error',
+      details: error.message,
+    });
   }
 }
 
