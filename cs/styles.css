@@ -1,7 +1,8 @@
 /*Estos estilos son para arreglar los botones de tema e idioma en mobil y ahora las notificaciones tambien xD*/
 @media screen and (max-width: 768px) {
     .toggle-btn {
-        position: fixed;
+        position: absolute;
+        top: 50%;
         z-index: 10;
         background: var(--background-light);
         box-shadow: var(--shadow-md);
