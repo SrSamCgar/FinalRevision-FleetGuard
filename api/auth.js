@@ -140,7 +140,7 @@ export default async function handler(req, res) {
   }
 }*/
 // api/auth.js
-import { createClient } from '@supabase/supabase-js'
+/*import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -193,4 +193,44 @@ export default async function handler(req, res) {
       details: error.message 
     })
   }
+}*/
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const { workerId, password } = req.body;
+
+  if (!workerId || !password) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('workers')
+      .select('*')
+      .eq('id', workerId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Supabase error:', error);
+      return res.status(500).json({ error: 'Database query error', details: error.message });
+    }
+
+    if (!data) {
+      return res.status(401).json({ error: 'Invalid worker ID' });
+    }
+
+    // Comparar la contraseña ingresada con la almacenada
+    if (data.password_hash !== password) {
+      return res.status(401).json({ error: 'Invalid password' });
+    }
+
+    console.log('Query successful, user authenticated:', !!data);
+    return res.status(200).json({ message: 'Authenticated successfully', user: data });
+  } catch (error) {
+    console.error('Server error:', error);
+    return res.status(500).json({ error: 'Server error', details: error.message });
+  }
 }
+
