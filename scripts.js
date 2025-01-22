@@ -227,7 +227,7 @@ async function login() {
             throw new Error('Please fill in both fields');
         }
 
-        const response = await fetch('/api/auth', {
+        const response = await fetch('api/auth', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ workerId, password }),
