@@ -278,7 +278,8 @@ export default async function handler(req, res) {
   }
 }*/
 import { createClient } from '@supabase/supabase-js';
-
+// Auth handler for login
+console.log('Request received at /api/auth');
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
