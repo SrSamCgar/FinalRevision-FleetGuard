@@ -2172,7 +2172,23 @@ function debounce(func, wait) {
         timeout = setTimeout(later, wait);
     };
 }
+/////////////////////////////////////////////////////////////////////////////////
+function checkInternetConnection() {
+      const popup = document.getElementById('offlinePopup');
+      if (!navigator.onLine) {
+        popup.style.display = 'block'; // Mostrar pop-up
+      } else {
+        popup.style.display = 'none'; // Ocultar pop-up
+      }
+    }
 
+    // Eventos para detectar conexión/desconexión
+    window.addEventListener('offline', checkInternetConnection);
+    window.addEventListener('online', checkInternetConnection);
+
+    // Comprobar estado inicial
+    checkInternetConnection();
+///////////////////////////////////////////////////////////////////////////////////
 function validateInputs() {
     const workerId = document.getElementById('workerId').value.trim();
     const password = document.getElementById('workerPassword').value.trim();
