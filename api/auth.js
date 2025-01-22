@@ -47,14 +47,6 @@ export default async function handler(req, res) {
   }
 }*/
 // api/auth.js
-import { createClient } from '@supabase/supabase-js'
-import bcrypt from 'bcryptjs'
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-)
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -63,7 +55,6 @@ export default async function handler(req, res) {
   const { workerId, password } = req.body
 
   try {
-    // Temporary direct password comparison until hashing is implemented
     const { data: user, error } = await supabase
       .from('workers')
       .select('*')
@@ -74,9 +65,8 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Invalid credentials' })
     }
 
-    // Remove "hashed_" prefix from stored password for now
-    const storedPassword = user.password_hash.replace('hashed_', '')
-    if (password !== storedPassword) {
+    // Compare with exact password_hash from database
+    if (user.password_hash !== `hashed_${password}`) {
       return res.status(401).json({ error: 'Invalid credentials' })
     }
 
