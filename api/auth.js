@@ -223,7 +223,8 @@ export default async function handler(req, res) {
       .select('*')
       .eq('id', workerId)
       .maybeSingle(); // Espera un único resultado o null
-
+      console.log('User data:', data);
+      console.log('Supabase error:', error);
     // Verificar si hubo un error en la consulta
     if (error) {
       console.error('Supabase error:', error);
