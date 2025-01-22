@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+/*import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -44,5 +44,40 @@ export default async function handler(req, res) {
     })
   } catch (error) {
     return res.status(500).json({ error: 'Server error' })
+  }
+}*/
+// api/auth.js
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const { workerId, password } = req.body;
+  console.log('Login attempt:', { workerId }); // Debug log
+
+  // Temporary hard-coded credentials while DB setup completes
+  const users = {
+    '9999': { password: 'admin123', name: 'Admin User', role: 'admin', status: 'active' },
+    '1234': { password: 'abcd1234', name: 'Juan Ramon', role: 'user', status: 'active' },
+    '9876': { password: 'carlos9876', name: 'Carlos Perez', role: 'auditor', status: 'active' }
+  };
+
+  try {
+    const user = users[workerId];
+    if (!user || user.password !== password) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    return res.status(200).json({
+      user: {
+        id: workerId,
+        name: user.name,
+        role: user.role,
+        status: user.status
+      }
+    });
+  } catch (error) {
+    console.error('Auth error:', error);
+    return res.status(500).json({ error: 'Server error' });
   }
 }
