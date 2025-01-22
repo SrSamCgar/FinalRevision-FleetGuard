@@ -203,12 +203,21 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
+  console.log('Request received at /api/auth');
+
+  // Verificar variables de entorno
+  console.log('Supabase URL:', process.env.SUPABASE_URL);
+  console.log('Supabase Key exists:', !!process.env.SUPABASE_ANON_KEY);
+
   if (req.method !== 'POST') {
+    console.error('Invalid HTTP method:', req.method);
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   // Extraer workerId y password del cuerpo de la solicitud
   const { workerId, password } = req.body;
+  console.log('Worker ID received:', workerId);
+  console.log('Password received:', password);
 
   // Validar si los campos están presentes
   if (!workerId || !password) {
@@ -223,8 +232,11 @@ export default async function handler(req, res) {
       .select('*')
       .eq('id', workerId)
       .maybeSingle(); // Espera un único resultado o null
-      console.log('User data:', data);
-      console.log('Supabase error:', error);
+
+    // Log resultados de la consulta
+    console.log('User data retrieved:', data);
+    console.log('Supabase query error:', error);
+
     // Verificar si hubo un error en la consulta
     if (error) {
       console.error('Supabase error:', error);
@@ -246,23 +258,24 @@ export default async function handler(req, res) {
 
     // Comparar la contraseña ingresada con la almacenada
     if (data.password_hash !== password) {
-      console.error('Password does not match');
+      console.error('Password mismatch for worker ID:', workerId);
       return res.status(401).json({ error: 'Invalid password' });
     }
 
     // Si todo es correcto, autenticación exitosa
-    console.log('Query successful, user authenticated:', !!data);
+    console.log('Authentication successful for worker ID:', workerId);
     return res.status(200).json({
       message: 'Authenticated successfully',
       user: data,
     });
   } catch (error) {
     // Manejar errores del servidor
-    console.error('Server error:', error);
+    console.error('Unexpected server error:', error);
     return res.status(500).json({
       error: 'Server error',
       details: error.message,
     });
   }
 }
+
 
