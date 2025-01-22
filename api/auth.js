@@ -100,7 +100,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Server error' });
   }
 }*/
-import { createClient } from '@supabase/supabase-js'
+/*import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -137,5 +137,60 @@ export default async function handler(req, res) {
       error: 'Server error', 
       details: error.message 
     });
+  }
+}*/
+// api/auth.js
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Missing Supabase credentials:', { 
+    hasUrl: !!supabaseUrl, 
+    hasKey: !!supabaseKey 
+  })
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey)
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' })
+  }
+
+  const { workerId, password } = req.body
+
+  try {
+    console.log('Testing connection to:', supabaseUrl)
+    
+    const { data, error } = await supabase
+      .from('workers')
+      .select('*')
+      .eq('id', workerId)
+      .single()
+
+    if (error) {
+      console.error('Supabase error:', error)
+      return res.status(500).json({ 
+        error: 'Database query error', 
+        details: error.message,
+        code: error.code
+      })
+    }
+
+    if (!data) {
+      return res.status(401).json({ error: 'Invalid credentials' })
+    }
+
+    console.log('Query successful, user found:', !!data)
+    return res.status(200).json({ message: 'Connection working' })
+
+  } catch (error) {
+    console.error('Server error:', error)
+    return res.status(500).json({ 
+      error: 'Server error',
+      details: error.message 
+    })
   }
 }
