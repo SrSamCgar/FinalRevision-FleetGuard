@@ -226,6 +226,7 @@ async function login() {
         if (!workerId || !password) {
             throw new Error('Please fill in both fields');
         }
+	console.log('Data sent to API:', { workerId, password });
 
         const response = await fetch('api/auth', {
             method: 'POST',
