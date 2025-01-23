@@ -2334,6 +2334,12 @@ function handleError(error, context) {
     console.error(`Error in ${context}:`, error);
     showNotification(`Error: ${error.message}`, 'error');
 }
+//funcion de filtro para la pantalla de admin
+function filterUsers() {
+  console.log("filterUsers function called. Functionality to be implemented.");
+  // Aquí agregarás la lógica para filtrar usuarios en el futuro
+}
+
 // Export functions to window
 Object.assign(window, {
     login,
