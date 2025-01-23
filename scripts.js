@@ -51,6 +51,11 @@ function initializeLoginButtons() {
     if(loginBtn) loginBtn.addEventListener('click', login);
     if(demoBtn) demoBtn.addEventListener('click', startDemoMode);
 }
+/////////////////////////////////////////////////////////////////////////////////////
+ function goToMenu() {
+      window.location.href = 'https://final-revision-fleet-guard.vercel.app/'; 
+	 
+    }
 // Configuration Data
 const workers = {
     '1234': { id: '003', name: 'Juan Ramon', password: 'abcd1234', role: 'user', inspections: [], status: 'active' },
