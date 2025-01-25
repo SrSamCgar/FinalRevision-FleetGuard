@@ -42,6 +42,7 @@
     .back-to-menu {
      /* position: fixed;
       bottom: 20px; */
+      position: absolute; 
       left: 10%; 
       background-color: #333;
       color: white;
