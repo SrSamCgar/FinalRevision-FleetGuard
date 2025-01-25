@@ -693,7 +693,7 @@ body {
     box-shadow: var(--shadow-lg);
     position: relative;
     overflow: hidden;
-    margin: 40px 0;
+    margin: 10% 0;
 }
 
 .dark-theme .card {
