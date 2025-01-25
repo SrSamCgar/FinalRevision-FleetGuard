@@ -7,7 +7,7 @@
         background: var(--background-light);
         box-shadow: var(--shadow-md);
     }
-    ////////////////////////////////////////////////////////////////////////////////////
+    
      #offlinePopup {
       display: none; 
       position: fixed;
@@ -51,7 +51,20 @@
     .back-to-menu::after {
       content: '←'; 
     }
-    ///////////////////////////////////////////////////////////////////////////////////
+.toggle-btn {
+    position: fixed;
+    right: 20px;
+    padding: 10px 15px;
+    background: rgba(59, 130, 246, 0.2);
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+    z-index: 999;
+}
     
     .dark-theme .toggle-btn {
         background: var(--background-dark);
