@@ -16,7 +16,8 @@
     }
 
     .changeBtn {
-        display: inline-block; 
+        display: inline-block;
+        right: 0;
         width: 200px; 
         height: 100px;
     }
