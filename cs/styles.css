@@ -355,7 +355,7 @@ textarea {
 .admin-header .btn-secondary {
     margin-left: auto; /* Add this line */
 }
-/* Styles for language and theme buttons 
+
 .toggle-btn {
     position: fixed;
     right: 20px;
@@ -369,7 +369,7 @@ textarea {
     transition: all 0.3s ease;
     backdrop-filter: blur(5px);
     z-index: 999;
-}*/
+}
 
 .toggle-btn:hover {
     box-shadow: 0 0 15px var(--primary-color);
