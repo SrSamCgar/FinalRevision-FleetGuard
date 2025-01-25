@@ -417,7 +417,7 @@ textarea {
 }
 /* New CSS for menu button positioning */
 #menuToggleBtn {
-    position: fixed;
+    
     left: 20px;
     top: 20px;
     z-index: 999;
