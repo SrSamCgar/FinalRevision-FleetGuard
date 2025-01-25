@@ -42,8 +42,8 @@
     .back-to-menu {
       position: fixed;
       bottom: 20px; 
-      left: 10%; 
-      top: 10;
+      left: 15%; 
+      top: 1;
       background-color: #333;
       color: white;
       border: none;
@@ -693,7 +693,7 @@ body {
     box-shadow: var(--shadow-lg);
     position: relative;
     overflow: hidden;
-    margin: 16px 0;
+    margin: 30px 0;
 }
 
 .dark-theme .card {
