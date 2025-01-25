@@ -17,6 +17,12 @@
       color: white;
     }
 
+    changeBtn {
+        display: inline-block; 
+        width: 200px; 
+        height: 100px;
+    }
+        
    
    /* /////////////////////////////////////////////////////////////////////////  */ 
      #offlinePopup {
@@ -357,8 +363,6 @@ textarea {
 }
 
 .toggle-btn {
-    position: fixed;
-    right: 20px;
     padding: 10px 15px;
     background: rgba(59, 130, 246, 0.2);
     border: 2px solid var(--primary-color);
