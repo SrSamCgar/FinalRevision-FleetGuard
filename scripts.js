@@ -1562,7 +1562,7 @@ async function completeInspection() {
     } catch (error) {
         console.error('Error completing inspection:', error);
         showNotification('Error generating PDF', 'error');
-    }*/
+    }
 
     // Show records screen
     showScreen('recordsScreen');
