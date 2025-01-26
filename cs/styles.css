@@ -692,7 +692,7 @@ body {
     padding: var(--spacing-lg);
     box-shadow: var(--shadow-lg);
     position: relative;
-    margin: -10% 0;
+    margin: 0% 0;
     right: 0%;
 }
 
