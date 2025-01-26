@@ -43,7 +43,7 @@
     }
 
     .back-to-menu {
-      position: absolute;
+      position: fixed;
       bottom: 20px; 
       left: 1%; 
       top: 1%;
