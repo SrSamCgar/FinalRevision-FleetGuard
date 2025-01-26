@@ -1028,6 +1028,136 @@ async function generateInspectionPDF(inspection) {
         doc.setTextColor(128, 128, 128);
         doc.text(`Generated: ${new Date().toLocaleString()}`, 20, doc.internal.pageSize.getHeight() - 15);
 
+        const timestamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
+
+        // Save PDF locally
+        doc.save(`FleetGuard_Inspection_${inspection.truckId}_${timestamp}.pdf`);
+
+        // Optionally, return true for success indication
+        return true;
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        showNotification('Error generating PDF report', 'error');
+        return false;
+    }
+}
+/*async function generateInspectionPDF(inspection) {
+    const { jsPDF } = window.jspdf;
+    if (!jsPDF) {
+        console.error('jsPDF library not loaded');
+        showNotification('Error: PDF generation library not available', 'error');
+        return;
+    }
+
+    try {
+        const doc = new jsPDF();
+
+        // Header with styling
+        doc.setFillColor(59, 130, 246);
+        doc.rect(0, 0, doc.internal.pageSize.getWidth(), 30, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(20);
+        doc.text('FleetGuard Inspection Report', 20, 20);
+
+        // Reset text color for body
+        doc.setTextColor(0, 0, 0);
+        let y = 40;
+        doc.setFontSize(12);
+
+        // Basic Info Section
+        const truck = trucks[inspection.truckId];
+        const basicInfo = [
+            `Inspector: ${inspection.worker}`,
+            `Vehicle ID: ${inspection.truckId}`,
+            `Model: ${truck ? truck.model : 'N/A'}`,
+            `Year: ${truck ? truck.year : 'N/A'}`,
+            `Date: ${inspection.date}`,
+        ];
+
+        basicInfo.forEach(info => {
+            doc.text(info, 20, y);
+            y += 10;
+        });
+        y += 10;
+
+        // Overall metric
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Overall Vehicle Condition', 20, y);
+        y += 10;
+
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        const condition = inspection.overallCondition;
+        const conditionText = [
+            `Overall Score: ${condition.score.toFixed(1)}%`,
+            `Critical Issues: ${condition.criticalCount}`,
+            `Warning Issues: ${condition.warningCount}`
+        ];
+
+        conditionText.forEach(text => {
+            doc.text(text, 20, y);
+            y += 10;
+        });
+        y += 10;
+
+        // Inspection Items Section
+        Object.entries(inspection.data).forEach(([key, value]) => {
+            const item = inspectionItems.find(i => i.id === key);
+            if (!item) return;
+
+            if (y > doc.internal.pageSize.getHeight() - 60) {
+                doc.addPage();
+                y = 20;
+            }
+
+            // Item Header
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${item.name[currentLanguage]} - Status: ${value.status.toUpperCase()}`, 20, y);
+            y += 10;
+
+            // Inspector Comments
+            if (value.comment) {
+                const commentLines = doc.splitTextToSize(`Inspector Comments: ${value.comment}`, 170);
+                doc.text(commentLines, 20, y);
+                y += commentLines.length * 6;
+            }
+
+            // AI Comments
+            if (value.aiComment) {
+                const aiCommentLines = doc.splitTextToSize(`AI Analysis: ${value.aiComment}`, 170);
+                doc.text(aiCommentLines, 20, y);
+                y += aiCommentLines.length * 6;
+            }
+
+            // Photos
+            if (value.photos && value.photos.length > 0) {
+                value.photos.forEach((photo, index) => {
+                    if (y + 70 > doc.internal.pageSize.getHeight() - 20) {
+                        doc.addPage();
+                        y = 20;
+                    }
+
+                    try {
+                        doc.addImage(photo, 'JPEG', 20, y, 50, 50);
+                        y += 55;
+                    } catch (error) {
+                        console.error(`Error adding image for photo ${index + 1}:`, error);
+                        doc.text(`Error: Unable to add image ${index + 1}`, 20, y);
+                        y += 10;
+                    }
+                });
+            }
+
+            y += 10; // Add spacing between items
+        });
+
+        // Footer
+        doc.setFontSize(10);
+        doc.setTextColor(128, 128, 128);
+        doc.text(`Generated: ${new Date().toLocaleString()}`, 20, doc.internal.pageSize.getHeight() - 15);
+
         // Instead of saving locally, get PDF as base64
         const pdfData = doc.output('datauristring');
         const timestamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
@@ -1070,7 +1200,7 @@ async function generateInspectionPDF(inspection) {
         showNotification('Error saving PDF report', 'error');
         return null;
     }
-}
+}*/
 /*function generateInspectionPDF(inspection) {
     const { jsPDF } = window.jspdf;
     if (!jsPDF) {
@@ -1220,15 +1350,27 @@ async function completeInspection() {
     }
     window.records.push(inspectionRecord);
 
+	 try {
+	        // Generate and upload PDF, but don't download
+	        const pdfUrl = await generateInspectionPDF(inspectionRecord, true);
+	        inspectionRecord.pdfUrl = pdfUrl;
+	        
+	        // Save to localStorage with PDF URL
+	        localStorage.setItem('inspectionRecords', JSON.stringify(window.records));
+	        showNotification('Inspection completed and PDF saved', 'success');
+	    } catch (error) {
+	        console.error('Error completing inspection:', error);
+	        showNotification('Error saving inspection', 'error');
+	    }
     // Save to localStorage
-    try {
+   /* try {
         localStorage.setItem('inspectionRecords', JSON.stringify(window.records));
         await generateInspectionPDF(inspectionRecord);
         showNotification('Inspection completed and PDF generated', 'success');
     } catch (error) {
         console.error('Error completing inspection:', error);
         showNotification('Error generating PDF', 'error');
-    }
+    }*/
 
     // Show records screen
     showScreen('recordsScreen');
