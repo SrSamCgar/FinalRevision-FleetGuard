@@ -1037,7 +1037,7 @@ async function generateInspectionPDF(inspection) {
         formData.append('file', pdfBlob, filename);
 
         // Upload to Supabase
-        const response = await fetch('/api/uploadPDF', {
+        const response = await fetch('api/uploadPDF', {
             method: 'POST',
             body: formData
         });
@@ -1657,7 +1657,7 @@ async function completeInspection() {
         };
 
         // Save to Supabase
-        const response = await fetch('/api/saveInspection', {
+        const response = await fetch('api/saveInspection', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(inspectionData)
