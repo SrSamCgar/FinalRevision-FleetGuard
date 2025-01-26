@@ -16,9 +16,9 @@
     }
 
     .changeBtn {
-        position: absolute; 
-        top: 1%;
-        left: 60%;
+        position: relative; 
+        top: 2%;
+        left: 68%;
     }
         
    
@@ -42,7 +42,7 @@
     .back-to-menu {
       position: fixed;
       bottom: 20px; 
-      left: 15%; 
+      left: 1%; 
       top: 1%;
       background-color: #333;
       color: white;
@@ -692,8 +692,8 @@ body {
     padding: var(--spacing-lg);
     box-shadow: var(--shadow-lg);
     position: relative;
-    overflow: hidden;
-    margin: 10% 0;
+    margin: -10% 0;
+    right: 0%;
 }
 
 .dark-theme .card {
