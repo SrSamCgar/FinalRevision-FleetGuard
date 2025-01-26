@@ -708,7 +708,7 @@ body {
     position: relative;
     margin: 0% 0;
     right: 0%;
-    overflow-y: auto;
+    overflow-y: scroll;
 }
 .dark-theme .card {
     background: #2d2d2d;
