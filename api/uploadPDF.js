@@ -10,31 +10,27 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { pdfData, filename } = req.body
+  const { pdfData, filename, inspectionId } = req.body
 
   try {
-    // Convert base64 to buffer
     const buffer = Buffer.from(pdfData.split(',')[1], 'base64')
     
-    // Upload to Supabase Storage
     const { data, error } = await supabase
       .storage
       .from('inspection-pdfs')
-      .upload(filename, buffer, {
+      .upload(`inspections/${filename}`, buffer, {
         contentType: 'application/pdf',
         upsert: true
       })
 
     if (error) throw error
 
-    // Get public URL
     const { data: urlData } = supabase
       .storage
       .from('inspection-pdfs')
-      .getPublicUrl(filename)
+      .getPublicUrl(`inspections/${filename}`)
 
     return res.status(200).json({ 
-      message: 'PDF uploaded successfully',
       url: urlData.publicUrl
     })
   } catch (error) {
