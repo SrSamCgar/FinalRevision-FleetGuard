@@ -916,6 +916,154 @@ async function generateInspectionPDF(inspection) {
     if (!jsPDF) {
         console.error('jsPDF library not loaded');
         showNotification('Error: PDF generation library not available', 'error');
+        return null;
+    }
+
+    try {
+        const doc = new jsPDF();
+
+        // Header with styling
+        doc.setFillColor(59, 130, 246);
+        doc.rect(0, 0, doc.internal.pageSize.getWidth(), 30, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(20);
+        doc.text('FleetGuard Inspection Report', 20, 20);
+
+        // Reset text color for body
+        doc.setTextColor(0, 0, 0);
+        let y = 40;
+        doc.setFontSize(12);
+
+        // Basic Info Section
+        const truck = trucks[inspection.truckId];
+        const basicInfo = [
+            `Inspector: ${inspection.worker}`,
+            `Vehicle ID: ${inspection.truckId}`,
+            `Model: ${truck ? truck.model : 'N/A'}`,
+            `Year: ${truck ? truck.year : 'N/A'}`,
+            `Date: ${inspection.date}`,
+        ];
+
+        basicInfo.forEach(info => {
+            doc.text(info, 20, y);
+            y += 10;
+        });
+        y += 10;
+
+        // Overall metric
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Overall Vehicle Condition', 20, y);
+        y += 10;
+
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        const condition = inspection.overallCondition;
+        const conditionText = [
+            `Overall Score: ${condition.score.toFixed(1)}%`,
+            `Critical Issues: ${condition.criticalCount}`,
+            `Warning Issues: ${condition.warningCount}`
+        ];
+
+        conditionText.forEach(text => {
+            doc.text(text, 20, y);
+            y += 10;
+        });
+        y += 10;
+
+        // Inspection Items Section
+        Object.entries(inspection.data).forEach(([key, value]) => {
+            const item = inspectionItems.find(i => i.id === key);
+            if (!item) return;
+
+            if (y > doc.internal.pageSize.getHeight() - 60) {
+                doc.addPage();
+                y = 20;
+            }
+
+            // Item Header
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${item.name[currentLanguage]} - Status: ${value.status.toUpperCase()}`, 20, y);
+            y += 10;
+
+            // Inspector Comments
+            if (value.comment) {
+                const commentLines = doc.splitTextToSize(`Inspector Comments: ${value.comment}`, 170);
+                doc.text(commentLines, 20, y);
+                y += commentLines.length * 6;
+            }
+
+            // AI Comments
+            if (value.aiComment) {
+                const aiCommentLines = doc.splitTextToSize(`AI Analysis: ${value.aiComment}`, 170);
+                doc.text(aiCommentLines, 20, y);
+                y += aiCommentLines.length * 6;
+            }
+
+            // Photos
+            if (value.photos && value.photos.length > 0) {
+                value.photos.forEach((photo, index) => {
+                    if (y + 70 > doc.internal.pageSize.getHeight() - 20) {
+                        doc.addPage();
+                        y = 20;
+                    }
+
+                    try {
+                        doc.addImage(photo, 'JPEG', 20, y, 50, 50);
+                        y += 55;
+                    } catch (error) {
+                        console.error(`Error adding image for photo ${index + 1}:`, error);
+                        doc.text(`Error: Unable to add image ${index + 1}`, 20, y);
+                        y += 10;
+                    }
+                });
+            }
+
+            y += 10; // Add spacing between items
+        });
+
+        // Footer
+        doc.setFontSize(10);
+        doc.setTextColor(128, 128, 128);
+        doc.text(`Generated: ${new Date().toLocaleString()}`, 20, doc.internal.pageSize.getHeight() - 15);
+
+        const timestamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
+        const filename = `FleetGuard_Inspection_${inspection.truckId}_${timestamp}.pdf`;
+
+        // Create Blob
+        const pdfBlob = new Blob([doc.output('blob')], { type: 'application/pdf' });
+        const formData = new FormData();
+        formData.append('file', pdfBlob, filename);
+
+        // Upload to Supabase
+        const response = await fetch('/api/uploadPDF', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to upload PDF');
+        }
+
+        const result = await response.json();
+
+        // Save locally
+        doc.save(filename);
+
+        return result.url;
+    } catch (error) {
+        console.error('Error generating/uploading PDF:', error);
+        showNotification('Error with PDF operation', 'error');
+        return null;
+    }
+}
+
+/*async function generateInspectionPDF(inspection) {
+    const { jsPDF } = window.jspdf;
+    if (!jsPDF) {
+        console.error('jsPDF library not loaded');
+        showNotification('Error: PDF generation library not available', 'error');
         return;
     }
 
@@ -1055,7 +1203,7 @@ async function generateInspectionPDF(inspection) {
         showNotification('Error with PDF operation', 'error');
         return null;
     }
-}
+}*/
 /*async function generateInspectionPDF(inspection) {
     const { jsPDF } = window.jspdf;
     if (!jsPDF) {
@@ -1479,6 +1627,66 @@ async function completeInspection() {
     const truckId = document.getElementById('truckId').value.trim();
     
     try {
+        // Create inspection record
+        const condition = calculateOverallCondition(currentInspectionData);
+        const inspectionRecord = {
+            worker: currentWorker.name,
+            worker_id: currentWorker.id,
+            truckId: truckId,
+            date: new Date().toLocaleString(),
+            duration: duration,
+            data: { ...currentInspectionData },
+            overallCondition: condition
+        };
+
+        // Generate and upload PDF
+        const pdfUrl = await generateInspectionPDF(inspectionRecord);
+
+        // Prepare data for database
+        const inspectionData = {
+            worker_id: currentWorker.id,
+            truck_id: truckId,
+            start_time: inspectionStartTime.toISOString(),
+            end_time: inspectionEndTime.toISOString(),
+            duration,
+            overall_condition: condition.score,
+            pdf_url: pdfUrl,
+            critical_count: condition.criticalCount,
+            warning_count: condition.warningCount,
+            status: condition.criticalCount > 0 ? 'critical' : condition.warningCount > 0 ? 'warning' : 'ok'
+        };
+
+        // Save to Supabase
+        const response = await fetch('/api/saveInspection', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(inspectionData)
+        });
+
+        if (!response.ok) throw new Error('Failed to save inspection');
+
+        // Add to local records
+        if (!Array.isArray(window.records)) {
+            window.records = [];
+        }
+        window.records.push({...inspectionRecord, pdfUrl});
+        localStorage.setItem('inspectionRecords', JSON.stringify(window.records));
+
+        showNotification('Inspection completed and saved successfully', 'success');
+        showScreen('recordsScreen');
+        displayRecords();
+
+    } catch (error) {
+        console.error('Error completing inspection:', error);
+        showNotification('Error saving inspection', 'error');
+    }
+}
+/*async function completeInspection() {
+    inspectionEndTime = new Date();
+    const duration = (inspectionEndTime - inspectionStartTime) / 1000;
+    const truckId = document.getElementById('truckId').value.trim();
+    
+    try {
         // Calculate conditions
         const condition = calculateOverallCondition(currentInspectionData);
         
@@ -1520,7 +1728,7 @@ async function completeInspection() {
         console.error('Error completing inspection:', error);
         showNotification('Error saving inspection', 'error');
     }
-}
+}*/
 /*async function completeInspection() {
 	inspectionEndTime = new Date();
     const duration = (inspectionEndTime - inspectionStartTime) / 1000; // in seconds
