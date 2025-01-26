@@ -58,10 +58,12 @@
      <div id="truckIdScreen" class="screen container">
         <div class="card">
             <h2 class="title">
+                <button class="back-to-menu" onclick="goToMenu()"></button>
                 <span data-lang="en">Enter Truck ID</span>
                 <span data-lang="es">Ingrese ID del Camion</span>
             </h2>
             <div class="input-group">
+                
                 <input type="text" id="truckId" 
                        placeholder="Truck ID / ID del Camión" 
                        pattern="[A-Z0-9]{4}" 
