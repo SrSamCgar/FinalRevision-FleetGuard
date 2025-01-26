@@ -1766,8 +1766,39 @@ function displayRecords(page = 1) {
                 </div>
             `;
         } else {
-            // Simpler view for regular users
-            recordItem.innerHTML = `
+            //Vista con opcion a descargar pero tambien salvado en linea
+		recordItem.innerHTML = `
+			    <div class="record-details">
+			        <strong>${record.worker}</strong>
+			        <div class="record-metadata">
+			            <span class="record-timestamp">${new Date(record.date).toLocaleString()}</span>
+			            ${criticalCount > 0 ? 
+			                `<span class="record-status status-critical">${criticalCount} Critical</span>` : 
+			                ''}
+			            ${warningCount > 0 ? 
+			                `<span class="record-status status-warning">${warningCount} Warning</span>` : 
+			                ''}
+			        </div>
+			        <div>Truck ID: ${record.truckId}</div>
+			    </div>
+			    <div class="record-actions">
+			        <button class="btn btn-secondary" onclick="viewRecordDetails('${record.truckId}')">
+			            <span data-lang="en">Details</span>
+			            <span data-lang="es">Detalles</span>
+			        </button>
+			        ${record.pdfUrl ? 
+			            `<a href="${record.pdfUrl}" download class="btn btn-secondary">Download PDF</a>` :
+			            ''
+			        }
+			        <button class="btn btn-secondary" onclick="downloadPDF('${record.truckId}')">
+			            <span data-lang="en">Generate PDF</span>
+			            <span data-lang="es">Generar PDF</span>
+			        </button>
+			    </div>
+			`;
+		
+		// Simpler view for regular users
+            /*recordItem.innerHTML = `
                 <div>
                     <p><strong>${record.truckId} - ${record.date}</strong></p>
                     <div class="record-metadata">
@@ -1780,7 +1811,7 @@ function displayRecords(page = 1) {
                     </div>
                 </div>
                 <button class="btn" onclick="downloadPDF('${record.truckId}')">PDF</button>
-            `;
+            `;*/
         }
 
         recordsContainer.appendChild(recordItem);
