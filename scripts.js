@@ -2123,11 +2123,18 @@ async function completeInspection() {
     const truckId = document.getElementById('truckId').value.trim();
 
     try {
+        // Verificar que inspectionStartTime esté definido
         if (!inspectionStartTime) {
             throw new Error('inspectionStartTime is not defined.');
         }
 
-        console.log('Current inspection data:', currentInspectionData);
+        // Verificar que currentInspectionData no esté vacío o mal estructurado
+        console.log('currentInspectionData:', currentInspectionData);
+        if (!currentInspectionData || Object.keys(currentInspectionData).length === 0) {
+            throw new Error('currentInspectionData is empty or undefined.');
+        }
+
+        // Calcular condición general
         const condition = calculateOverallCondition(currentInspectionData);
         console.log('Condition returned by calculateOverallCondition:', condition);
 
@@ -2135,6 +2142,7 @@ async function completeInspection() {
             throw new Error('Invalid condition object. Missing properties.');
         }
 
+        // Continuar con el flujo
         const inspectionRecord = {
             worker: currentWorker.name,
             worker_id: currentWorker.id,
@@ -2201,6 +2209,7 @@ async function completeInspection() {
         showNotification('Error saving inspection', 'error');
     }
 }
+
 
 
 
