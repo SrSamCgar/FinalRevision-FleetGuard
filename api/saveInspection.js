@@ -11,6 +11,7 @@ export default async function handler(req, res) {
   }
 
   const inspection = req.body;
+  console.log('Received inspection data:', inspection);
 
   try {
     // Validate required fields
@@ -18,12 +19,27 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
+    // Format the data according to your table schema
+    const inspectionData = {
+      worker_id: inspection.worker_id,
+      truck_id: inspection.truck_id,
+      start_time: inspection.start_time,
+      end_time: inspection.end_time,
+      duration: inspection.duration,
+      overall_condition: inspection.overall_condition,
+      pdf_url: inspection.pdf_url,
+      critical_count: inspection.critical_count,
+      warning_count: inspection.warning_count,
+      status: inspection.status,
+      created_at: new Date().toISOString()
+    };
+
+    console.log('Formatted inspection data:', inspectionData);
+
     const { data, error } = await supabase
       .from('inspections')
-      .insert([{
-        ...inspection,
-        created_at: new Date().toISOString()
-      }]);
+      .insert([inspectionData])
+      .select();
 
     if (error) {
       console.error('Database error:', error);
