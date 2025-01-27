@@ -30,7 +30,8 @@ export default async function handler(req, res) {
         query = query.eq('worker_id', worker_id);
       }
     }
-
+    // Log para ver la consulta generada
+      console.log('Generated query:', query);
     const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
