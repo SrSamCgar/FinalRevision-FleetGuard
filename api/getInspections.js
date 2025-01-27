@@ -36,6 +36,7 @@ export default async function handler(req, res) {
       throw error;
     }
 
+    console.log('Data fetched from database:', data); // Agrega este log
     return res.status(200).json({ inspections: data });
   } catch (error) {
     console.error('Error fetching inspections:', error);
