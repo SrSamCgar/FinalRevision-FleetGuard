@@ -1522,7 +1522,15 @@ async function compressImage(file, maxWidth = 1280, maxHeight = 960, quality = 0
         reader.readAsDataURL(file);
     });
 }
-
+function cleanupCharts() {
+  const chartIds = ['inspectionTimesChart', 'fleetConditionChart'];
+  chartIds.forEach(id => {
+    const chart = Chart.getChart(id);
+    if (chart) {
+      chart.destroy();
+    }
+  });
+}
 function cleanupImages() {
     const photoPreview = document.getElementById('photoPreview');
     if (photoPreview) {
@@ -2520,12 +2528,32 @@ function showUserManagement() {
     showScreen('userManagementScreen');
     displayUsers();
 }
-function showMetrics() {
+/*function showMetrics() {
     updateMetricsDisplay();
     toggleSidebar();
     showScreen('metricsScreen');
     // Placeholder for future metrics initialization
     console.log('Metrics screen shown - ready for future implementation');
+}*/
+//funcion de pantalla de metricas que se limpia
+function showMetrics() {
+    cleanupCharts(); // Add this line
+    toggleSidebar();
+    showScreen('metricsScreen');
+    updateMetricsDisplay();
+    console.log('Metrics screen shown and charts initialized');
+}
+//ver los detalles de los registros
+function viewRecordDetails(recordId) {
+    try {
+        console.log('Viewing details for record:', recordId);
+        // For now, just show an alert with the record ID
+        showNotification(`Viewing details for inspection ${recordId}`, 'info');
+        // TODO: Implement detailed view modal or screen
+    } catch (error) {
+        console.error('Error viewing record details:', error);
+        showNotification('Error viewing record details', 'error');
+    }
 }
 function displayUsers() {
     const tableBody = document.getElementById('userTableBody');
