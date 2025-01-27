@@ -2088,31 +2088,40 @@ async function generateInspectionPDF(inspection) {
     }
 }*/
 async function completeInspection() {
-    const inspectionEndTime = new Date(); // Marca de tiempo de fin
-    const duration = (inspectionEndTime - inspectionStartTime) / 1000; // Duración en segundos
-    const truckId = document.getElementById('truckId').value.trim(); // Obtener el ID del camión
+    const inspectionEndTime = new Date();
+    const duration = (inspectionEndTime - inspectionStartTime) / 1000;
+    const truckId = document.getElementById('truckId').value.trim();
 
     try {
-        // Crear registro inicial de inspección
+        if (!inspectionStartTime) {
+            throw new Error('inspectionStartTime is not defined.');
+        }
+
         const condition = calculateOverallCondition(currentInspectionData);
+        console.log('Condition:', condition);
+
+        if (!condition || typeof condition.score === 'undefined') {
+            throw new Error('Invalid condition object. Missing properties.');
+        }
+
         const inspectionRecord = {
             worker: currentWorker.name,
             worker_id: currentWorker.id,
             truck_id: truckId,
-            start_time: inspectionStartTime.toISOString(), // Convertir a formato ISO
-            end_time: inspectionEndTime.toISOString(), // Convertir a formato ISO
+            start_time: inspectionStartTime.toISOString(),
+            end_time: inspectionEndTime.toISOString(),
             duration: duration,
-            overall_condition: condition.overallScore || null,
+            overall_condition: condition.score || null, // Cambiado a condition.score
             critical_count: condition.criticalCount || 0,
             warning_count: condition.warningCount || 0,
-            data: { ...currentInspectionData }, // Copia de los datos actuales
+            data: { ...currentInspectionData },
         };
 
-        // Generar y cargar PDF
+        console.log('Inspection record before generating PDF:', inspectionRecord);
+
         const pdfUrl = await generateInspectionPDF(inspectionRecord);
         inspectionRecord.pdf_url = pdfUrl;
 
-        // Preparar datos para la base de datos
         const inspectionData = {
             worker_id: inspectionRecord.worker_id,
             truck_id: inspectionRecord.truck_id,
@@ -2123,17 +2132,18 @@ async function completeInspection() {
             pdf_url: inspectionRecord.pdf_url,
             critical_count: inspectionRecord.critical_count,
             warning_count: inspectionRecord.warning_count,
-            status: 'completed', // Estado administrativo
+            status: 'completed',
             dynamic_status:
                 inspectionRecord.critical_count > 0
                     ? 'critical'
                     : inspectionRecord.warning_count > 0
                     ? 'warning'
-                    : 'ok', // Estado dinámico basado en la condición
+                    : 'ok',
             created_at: new Date().toISOString(),
         };
 
-        // Guardar en la base de datos (Supabase)
+        console.log('Inspection data sent to saveInspection:', inspectionData);
+
         const response = await fetch('/api/saveInspection', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -2142,14 +2152,12 @@ async function completeInspection() {
 
         if (!response.ok) throw new Error('Failed to save inspection');
 
-        // Guardar en los registros locales
         if (!Array.isArray(window.records)) {
             window.records = [];
         }
         window.records.push({ ...inspectionRecord, pdfUrl });
         localStorage.setItem('inspectionRecords', JSON.stringify(window.records));
 
-        // Mostrar notificación de éxito
         showNotification('Inspection completed and saved successfully', 'success');
         showScreen('recordsScreen');
         displayRecords();
@@ -2158,6 +2166,7 @@ async function completeInspection() {
         showNotification('Error saving inspection', 'error');
     }
 }
+
 
 /*async function completeInspection() {
     inspectionEndTime = new Date();
