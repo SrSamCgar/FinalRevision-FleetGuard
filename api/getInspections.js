@@ -7,41 +7,52 @@ const supabase = createClient(
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
+    console.log('Invalid method used:', req.method); // Log del método de solicitud
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { worker_id, isAdmin } = req.query; // Parámetros de la URL
-  console.log('Worker ID received:', worker_id); // Log del worker_id recibido
-    console.log('Is Admin received:', isAdmin);   // Log del rol recibido
+  const { worker_id, isAdmin } = req.query;
+
+  // Logs iniciales de los parámetros recibidos
+  console.log('GET Inspections Request');
+  console.log('Worker ID received:', worker_id);
+  console.log('Is Admin received:', isAdmin);
+
   try {
-    let query = supabase
-      .from('inspections')
-      .select('*');
+    let query = supabase.from('inspections').select('*');
 
     if (!isAdmin || isAdmin === 'false') {
-      // Si no es administrador, filtrar por worker_id
+      console.log('Non-admin user detected. Applying worker_id filter.');
       if (!worker_id) {
+        console.log('Error: Worker ID is required for non-admin users.');
         return res.status(400).json({ error: 'worker_id is required for non-admin users' });
       }
       query = query.eq('worker_id', worker_id);
     } else {
-      // Si es administrador, aplica filtros adicionales si se proporciona worker_id
+      console.log('Admin user detected.');
       if (worker_id) {
+        console.log('Applying additional filter for worker_id:', worker_id);
         query = query.eq('worker_id', worker_id);
       }
     }
-    // Log para ver la consulta generada
-      console.log('Generated query:', query);
+
+    // Log para la consulta generada
+    console.log('Executing query...');
+
     const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
+      console.error('Error executing query:', error);
       throw error;
     }
 
-    console.log('Data fetched from database:', data); // Agrega este log
+    // Log de los datos obtenidos
+    console.log('Data fetched successfully:', data);
+
     return res.status(200).json({ inspections: data });
   } catch (error) {
-    console.error('Error fetching inspections:', error);
+    console.error('Unexpected error in handler:', error);
     return res.status(500).json({ error: error.message });
   }
 }
+
