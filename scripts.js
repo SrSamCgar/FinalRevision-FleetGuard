@@ -1559,8 +1559,8 @@ async function fetchInspectionRecords(workerId, isAdmin = false) {
     }
 
     const url = `/api/getInspections?${queryParams.toString()}`;
-    console.log('Fetching inspections from URL:', url); // Log de la URL generada
-
+    console.log('Fetching inspections with:', { workerId, isAdmin });
+    console.log('Fetching inspections from URL:', url);
     // Llamada al API
     const response = await fetch(url, {
       method: 'GET',
@@ -1624,6 +1624,155 @@ async function fetchInspectionRecords(workerId, isAdmin = false) {
 
 // Function to display records
 async function displayRecords(page = 1) {
+    const recordsContainer = document.getElementById('recordsContainer');
+    if (!recordsContainer) return;
+
+    try {
+        // Log del inicio de la función y el parámetro de página
+        console.log('Displaying records for page:', page);
+
+        // Mostrar estado de carga
+        recordsContainer.innerHTML = '<div class="loading-spinner"></div>';
+
+        // Obtener registros desde el backend o localStorage
+        console.log('Fetching inspection records...');
+        let records = await fetchInspectionRecords?.(currentWorker.id, currentWorker.role === 'admin') 
+            || JSON.parse(localStorage.getItem('inspectionRecords') || '[]');
+        console.log('Fetched records:', records);
+
+        // Filtrar registros según el rol del usuario
+        let filteredRecords = records;
+        console.log('Current worker role:', currentWorker.role);
+        if (currentWorker.role !== 'admin') {
+            filteredRecords = filteredRecords.filter(record => 
+                record.worker_id === currentWorker.id || record.worker === currentWorker.name
+            );
+            console.log('Filtered records for non-admin user:', filteredRecords);
+        }
+
+        // Manejar búsqueda y filtros (solo para vista admin)
+        if (currentWorker.role === 'admin') {
+            console.log('Admin search and filters active...');
+            const searchTerm = document.getElementById('recordSearchInput')?.value?.toLowerCase();
+            const statusFilter = document.getElementById('recordFilterStatus')?.value;
+
+            if (searchTerm) {
+                console.log('Applying search term filter:', searchTerm);
+                filteredRecords = filteredRecords.filter(record =>
+                    (record.worker?.toLowerCase().includes(searchTerm) ||
+                        record.worker_id?.toLowerCase().includes(searchTerm)) ||
+                    (record.truckId?.toLowerCase().includes(searchTerm) ||
+                        record.truck_id?.toLowerCase().includes(searchTerm))
+                );
+                console.log('Records after search term filter:', filteredRecords);
+            }
+
+            if (statusFilter && statusFilter !== 'all') {
+                console.log('Applying status filter:', statusFilter);
+                filteredRecords = filteredRecords.filter(record =>
+                    (record.status === statusFilter) ||
+                    (Object.values(record.data || {}).some(item => item.status === statusFilter))
+                );
+                console.log('Records after status filter:', filteredRecords);
+            }
+        }
+
+        // Ordenar registros por fecha (los más recientes primero)
+        console.log('Sorting records by date...');
+        filteredRecords.sort((a, b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date));
+        console.log('Sorted records:', filteredRecords);
+
+        // Paginación
+        const recordsPerPage = 10;
+        const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
+        const startIndex = (page - 1) * recordsPerPage;
+        const paginatedRecords = filteredRecords.slice(startIndex, startIndex + recordsPerPage);
+        console.log(`Paginated records (Page ${page}):`, paginatedRecords);
+
+        // Limpiar el estado de carga
+        recordsContainer.innerHTML = '';
+
+        // Mostrar mensaje si no hay registros
+        if (paginatedRecords.length === 0) {
+            console.warn('No inspection records found.');
+            recordsContainer.innerHTML = `
+                <p class="text-center">
+                    <span data-lang="en">No inspection records found.</span>
+                    <span data-lang="es">No se encontraron registros de inspección.</span>
+                </p>
+            `;
+            return;
+        }
+
+        // Renderizar los registros
+        console.log('Rendering records...');
+        paginatedRecords.forEach((record) => {
+            const criticalCount = record.critical_count || Object.values(record.data || {}).filter(item => item.status === 'critical').length;
+            const warningCount = record.warning_count || Object.values(record.data || {}).filter(item => item.status === 'warning').length;
+
+            const recordItem = document.createElement('div');
+            recordItem.className = 'record-item';
+
+            recordItem.innerHTML = `
+                <div class="record-details">
+                    <strong>${record.worker || record.worker_id}</strong>
+                    <div class="record-metadata">
+                        <span class="record-timestamp">${new Date(record.created_at || record.date).toLocaleString()}</span>
+                        ${criticalCount > 0 ?
+                            `<span class="record-status status-critical">${criticalCount} Critical</span>` :
+                            ''}
+                        ${warningCount > 0 ?
+                            `<span class="record-status status-warning">${warningCount} Warning</span>` :
+                            ''}
+                    </div>
+                    <div>Truck ID: ${record.truckId || record.truck_id}</div>
+                </div>
+                <div class="record-actions">
+                    <button class="btn btn-secondary" onclick="viewRecordDetails('${record.id || record.truckId}')">
+                        <span data-lang="en">Details</span>
+                        <span data-lang="es">Detalles</span>
+                    </button>
+                    ${record.pdf_url || record.pdfUrl ?
+                        `<a href="${record.pdf_url || record.pdfUrl}" target="_blank" class="btn btn-secondary">PDF</a>` :
+                        `<button class="btn btn-secondary" onclick="downloadPDF('${record.id || record.truckId}')">
+                            <span data-lang="en">Generate PDF</span>
+                            <span data-lang="es">Generar PDF</span>
+                        </button>`
+                    }
+                </div>
+            `;
+
+            recordsContainer.appendChild(recordItem);
+        });
+
+        // Actualizar controles de paginación
+        const pageInfo = document.getElementById('pageInfo');
+        const prevPage = document.getElementById('prevPage');
+        const nextPage = document.getElementById('nextPage');
+
+        if (pageInfo) pageInfo.textContent = `Page ${page} of ${totalPages}`;
+        if (prevPage) prevPage.disabled = page === 1;
+        if (nextPage) nextPage.disabled = page === totalPages;
+
+        console.log('Pagination updated.');
+
+        // Actualizar idioma
+        updateLanguage();
+        console.log('Language updated.');
+
+    } catch (error) {
+        console.error('Error displaying records:', error);
+        recordsContainer.innerHTML = `
+            <p class="text-center text-error">
+                <span data-lang="en">Error loading inspection records.</span>
+                <span data-lang="es">Error al cargar los registros de inspección.</span>
+            </p>
+        `;
+        showNotification('Error loading inspection records', 'error');
+    }
+}
+
+/*async function displayRecords(page = 1) {
     const recordsContainer = document.getElementById('recordsContainer');
     if (!recordsContainer) return;
 
@@ -1747,7 +1896,7 @@ async function displayRecords(page = 1) {
         `;
         showNotification('Error loading inspection records', 'error');
     }
-}
+}*/
 
 /*async function displayRecords(page = 1) {
     const recordsContainer = document.getElementById('recordsContainer');
