@@ -17,19 +17,14 @@ export default async function handler(req, res) {
             "Desgaste moderado",
             "Requiere reparación menor",
             "Requiere reparación urgente",
-            "No funcional",
-            "Requiere reemplazo inminente",
-            "Requiere juste",
-            "Limpieza requerida"
+            "No funcional"
         ],
         issues: [
             "No presenta problemas",
             "Daño cosmético menor",
             "Daño estructural",
             "Problema funcional",
-            "Grietas visibles en el espejo/vidrio",
             "Conexión floja",
-            "Llanta Desinflada",
             "Falta de ajuste adecuado",
             "Acumulación de suciedad"
         ]
