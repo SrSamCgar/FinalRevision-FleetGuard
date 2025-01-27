@@ -2780,7 +2780,7 @@ async function displayRecords(page = 1) {
         `;
         showNotification('Error loading inspection records', 'error');
     }
-}*/
+}
 
 /*function displayRecords(page = 1) {
     const recordsContainer = document.getElementById('recordsContainer');
@@ -2930,7 +2930,7 @@ async function displayRecords(page = 1) {
                     </div>
                 </div>
                 <button class="btn" onclick="downloadPDF('${record.truckId}')">PDF</button>
-            `;*/
+            `;
         }
 
         recordsContainer.appendChild(recordItem);
