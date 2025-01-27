@@ -2088,6 +2088,78 @@ async function generateInspectionPDF(inspection) {
     }
 }*/
 async function completeInspection() {
+    const inspectionEndTime = new Date(); // Marca de tiempo de fin
+    const duration = (inspectionEndTime - inspectionStartTime) / 1000; // Duración en segundos
+    const truckId = document.getElementById('truckId').value.trim(); // Obtener el ID del camión
+
+    try {
+        // Crear registro inicial de inspección
+        const condition = calculateOverallCondition(currentInspectionData);
+        const inspectionRecord = {
+            worker: currentWorker.name,
+            worker_id: currentWorker.id,
+            truck_id: truckId,
+            start_time: inspectionStartTime.toISOString(), // Convertir a formato ISO
+            end_time: inspectionEndTime.toISOString(), // Convertir a formato ISO
+            duration: duration,
+            overall_condition: condition.overallScore || null,
+            critical_count: condition.criticalCount || 0,
+            warning_count: condition.warningCount || 0,
+            data: { ...currentInspectionData }, // Copia de los datos actuales
+        };
+
+        // Generar y cargar PDF
+        const pdfUrl = await generateInspectionPDF(inspectionRecord);
+        inspectionRecord.pdf_url = pdfUrl;
+
+        // Preparar datos para la base de datos
+        const inspectionData = {
+            worker_id: inspectionRecord.worker_id,
+            truck_id: inspectionRecord.truck_id,
+            start_time: inspectionRecord.start_time,
+            end_time: inspectionRecord.end_time,
+            duration: inspectionRecord.duration,
+            overall_condition: inspectionRecord.overall_condition,
+            pdf_url: inspectionRecord.pdf_url,
+            critical_count: inspectionRecord.critical_count,
+            warning_count: inspectionRecord.warning_count,
+            status: 'completed', // Estado administrativo
+            dynamic_status:
+                inspectionRecord.critical_count > 0
+                    ? 'critical'
+                    : inspectionRecord.warning_count > 0
+                    ? 'warning'
+                    : 'ok', // Estado dinámico basado en la condición
+            created_at: new Date().toISOString(),
+        };
+
+        // Guardar en la base de datos (Supabase)
+        const response = await fetch('/api/saveInspection', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(inspectionData),
+        });
+
+        if (!response.ok) throw new Error('Failed to save inspection');
+
+        // Guardar en los registros locales
+        if (!Array.isArray(window.records)) {
+            window.records = [];
+        }
+        window.records.push({ ...inspectionRecord, pdfUrl });
+        localStorage.setItem('inspectionRecords', JSON.stringify(window.records));
+
+        // Mostrar notificación de éxito
+        showNotification('Inspection completed and saved successfully', 'success');
+        showScreen('recordsScreen');
+        displayRecords();
+    } catch (error) {
+        console.error('Error completing inspection:', error);
+        showNotification('Error saving inspection', 'error');
+    }
+}
+
+/*async function completeInspection() {
     inspectionEndTime = new Date();
     const duration = (inspectionEndTime - inspectionStartTime) / 1000;
     const truckId = document.getElementById('truckId').value.trim();
@@ -2148,7 +2220,7 @@ async function completeInspection() {
         console.error('Error completing inspection:', error);
         showNotification('Error saving inspection', 'error');
     }
-}
+}*/
 /*async function completeInspection() {
     inspectionEndTime = new Date();
     const duration = (inspectionEndTime - inspectionStartTime) / 1000;
