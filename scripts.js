@@ -1647,6 +1647,62 @@ function downloadPDF(index) {
 //Funcion para obtencion de datos para mostrar
 async function fetchInspectionRecords(workerId, isAdmin = false) {
   try {
+    // Validación de parámetros
+    if (!workerId && !isAdmin) {
+      throw new Error('Worker ID is required for non-admin users');
+    }
+
+    // Construcción dinámica de la URL
+    const queryParams = new URLSearchParams();
+    if (isAdmin) {
+      queryParams.append('isAdmin', 'true');
+    }
+    if (workerId) {
+      queryParams.append('worker_id', workerId);
+    }
+
+    const url = `/api/getInspections?${queryParams.toString()}`;
+    console.log('Fetching inspections from URL:', url); // Log de la URL generada
+
+    // Llamada al API
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    // Manejo de errores en la respuesta
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Backend error:', errorData);
+      throw new Error(
+        errorData.message || 'Failed to fetch inspection records'
+      );
+    }
+
+    // Parsear y devolver los datos
+    const data = await response.json();
+    console.log('Fetched inspection records:', data);
+
+    // Validación del formato de datos
+    if (!data || !Array.isArray(data.inspections)) {
+      console.error('Invalid data format:', data);
+      throw new Error('Invalid data format received from backend');
+    }
+
+    return data.inspections; // Devuelve los registros de inspección
+  } catch (error) {
+    // Manejo centralizado de errores
+    console.error('Error fetching inspection records:', error);
+    showNotification(
+      'Error fetching inspection records. Please try again.',
+      'error'
+    );
+    throw error; // Lanza el error para que el controlador superior pueda manejarlo
+  }
+}
+
+/*async function fetchInspectionRecords(workerId, isAdmin = false) {
+  try {
     const url = isAdmin
       ? `/api/getInspections?isAdmin=true${workerId ? `&worker_id=${workerId}` : ''}`
       : `/api/getInspections?worker_id=${workerId}`;
@@ -1667,7 +1723,7 @@ async function fetchInspectionRecords(workerId, isAdmin = false) {
     console.error('Error fetching inspection records:', error);
     throw error;
   }
-}
+}*/
 
 // Function to display records
 async function displayRecords(page = 1) {
