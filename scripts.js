@@ -2708,12 +2708,36 @@ async function fetchInspectionRecords(workerId, isAdmin = false) {
 
     const data = await response.json();
     console.log('Fetched inspection records:', data);
-    return data.inspections;
+    return data.inspections || []; // Asegúrate de acceder al campo correcto
   } catch (error) {
     console.error('Error fetching inspection records:', error);
     throw error;
   }
 }
+
+/*async function fetchInspectionRecords(workerId, isAdmin = false) {
+  try {
+    const url = isAdmin
+      ? `/api/getInspections?isAdmin=true${workerId ? `&worker_id=${workerId}` : ''}`
+      : `/api/getInspections?worker_id=${workerId}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch inspection records');
+    }
+
+    const data = await response.json();
+    console.log('Fetched inspection records:', data);
+    return data.inspections;
+  } catch (error) {
+    console.error('Error fetching inspection records:', error);
+    throw error;
+  }
+}*/
 
 // Function to display records
 async function displayRecords(page = 1) {
@@ -2733,6 +2757,7 @@ async function displayRecords(page = 1) {
             filteredRecords = filteredRecords.filter(record => record.worker_id === currentWorker.id || record.worker === currentWorker.name);
         }
 
+	console.log('Records after filtering:', filteredRecords); // Agrega este log
         // Manejar búsqueda y filtros (solo para vista admin)
         if (currentWorker.role === 'admin') {
             const searchTerm = document.getElementById('recordSearchInput')?.value?.toLowerCase();
