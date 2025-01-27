@@ -564,6 +564,36 @@ function updateInspectionDisplay() {
 }
 // Add overall condition
 function calculateOverallCondition(inspectionData) {
+    if (!inspectionData || Object.keys(inspectionData).length === 0) {
+        return { score: 100, criticalCount: 0, warningCount: 0 }; // Valores predeterminados
+    }
+
+    const items = Object.values(inspectionData);
+    const totalItems = items.length;
+    let criticalCount = 0;
+    let warningCount = 0;
+
+    items.forEach(item => {
+        if (item.status === 'critical') criticalCount++;
+        if (item.status === 'warning') warningCount++;
+    });
+
+    // Calcular porcentaje:
+    const baseScore = 100;
+    const criticalDeduction = criticalCount * 20;
+    const warningDeduction = warningCount * 10;
+
+    let overallScore = baseScore - criticalDeduction - warningDeduction;
+    overallScore = Math.max(0, Math.min(100, overallScore)); // Mantener entre 0-100
+
+    return {
+        score: overallScore,
+        criticalCount,
+        warningCount
+    };
+}
+
+/*function calculateOverallCondition(inspectionData) {
     const items = Object.values(inspectionData);
     const totalItems = items.length;
     let criticalCount = 0;
@@ -589,7 +619,7 @@ function calculateOverallCondition(inspectionData) {
         criticalCount,
         warningCount
     };
-}
+}*/
 //session manager
 const SessionManager = {
     timeout: 30 * 60 * 1000, // 30 minutes
@@ -2097,8 +2127,9 @@ async function completeInspection() {
             throw new Error('inspectionStartTime is not defined.');
         }
 
+        console.log('Current inspection data:', currentInspectionData);
         const condition = calculateOverallCondition(currentInspectionData);
-        console.log('Condition:', condition);
+        console.log('Condition returned by calculateOverallCondition:', condition);
 
         if (!condition || typeof condition.score === 'undefined') {
             throw new Error('Invalid condition object. Missing properties.');
@@ -2111,13 +2142,17 @@ async function completeInspection() {
             start_time: inspectionStartTime.toISOString(),
             end_time: inspectionEndTime.toISOString(),
             duration: duration,
-            overall_condition: condition.score || null, // Cambiado a condition.score
+            overall_condition: condition.score || null,
             critical_count: condition.criticalCount || 0,
             warning_count: condition.warningCount || 0,
             data: { ...currentInspectionData },
         };
 
         console.log('Inspection record before generating PDF:', inspectionRecord);
+
+        if (!inspectionRecord || typeof inspectionRecord.overall_condition === 'undefined') {
+            throw new Error('Invalid inspectionRecord. Missing required properties.');
+        }
 
         const pdfUrl = await generateInspectionPDF(inspectionRecord);
         inspectionRecord.pdf_url = pdfUrl;
@@ -2166,6 +2201,7 @@ async function completeInspection() {
         showNotification('Error saving inspection', 'error');
     }
 }
+
 
 
 /*async function completeInspection() {
