@@ -2109,18 +2109,20 @@ async function completeInspection() {
         const pdfUrl = await generateInspectionPDF(inspectionRecord);
 
         // Prepare data for database
-        const inspectionData = {
-            worker_id: currentWorker.id,
-            truck_id: truckId,
-            start_time: inspectionStartTime.toISOString(),
-            end_time: inspectionEndTime.toISOString(),
-            duration,
-            overall_condition: condition.score,
-            pdf_url: pdfUrl,
-            critical_count: condition.criticalCount,
-            warning_count: condition.warningCount,
-            status: condition.criticalCount > 0 ? 'critical' : condition.warningCount > 0 ? 'warning' : 'ok'
-        };
+	const inspectionData = {
+	  worker_id: inspection.worker_id,
+	  truck_id: inspection.truck_id,
+	  start_time: inspection.start_time,
+	  end_time: inspection.end_time,
+	  duration: inspection.duration,
+	  overall_condition: inspection.overall_condition || null,
+	  pdf_url: inspection.pdf_url || null,
+	  critical_count: inspection.critical_count || 0,
+	  warning_count: inspection.warning_count || 0,
+	  status: 'completed', // Estado administrativo
+	  dynamic_status: inspection.critical_count > 0 ? 'critical' : inspection.warning_count > 0 ? 'warning' : 'ok', // Estado dinámico
+	  created_at: new Date().toISOString(),
+	};
 
         // Save to Supabase
         const response = await fetch('api/saveInspection', {
