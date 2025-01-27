@@ -1544,10 +1544,59 @@ function downloadPDF(index) {
 //Funcion para obtencion de datos para mostrar
 async function fetchInspectionRecords(workerId, isAdmin = false) {
   try {
-    // Validación de parámetros
-    if (!workerId && !isAdmin) {
-      throw new Error('Worker ID is required for non-admin users');
+    // Log inicial para depuración
+    console.log('Fetching inspections with parameters:', { workerId, isAdmin });
+
+    // Construcción dinámica de la URL con parámetros
+    const queryParams = new URLSearchParams();
+    if (workerId) queryParams.append('worker_id', workerId);
+    if (isAdmin) queryParams.append('isAdmin', 'true');
+    const url = `/api/getInspections?${queryParams.toString()}`;
+
+    // Log para verificar la URL final
+    console.log('Fetching inspections from URL:', url);
+
+    // Realizar la solicitud al backend
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    // Manejo de errores en la respuesta
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Backend error response:', errorData);
+      throw new Error(errorData.error || 'Failed to fetch inspection records');
     }
+
+    // Parsear los datos devueltos por el backend
+    const data = await response.json();
+    console.log('Fetched inspection records:', data);
+
+    // Validación del formato de datos recibidos
+    if (!data || !Array.isArray(data.inspections)) {
+      console.error('Invalid data format received:', data);
+      throw new Error('Invalid data format received from backend');
+    }
+
+    // Devolver los registros de inspección
+    return data.inspections;
+
+  } catch (error) {
+    // Manejo centralizado de errores y notificación al usuario
+    console.error('Error in fetchInspectionRecords:', error);
+    showNotification(
+      'Error fetching inspection records. Please try again.',
+      'error'
+    );
+    throw error; // Lanza el error para manejarlo en niveles superiores si es necesario
+  }
+}
+
+/*async function fetchInspectionRecords(workerId, isAdmin = false) {
+  try {
+    // Validación de parámetros
+	console.log('Fetching inspections with worker:', workerId, 'isAdmin:', isAdmin);
 
     // Construcción dinámica de la URL
     const queryParams = new URLSearchParams();
@@ -1596,7 +1645,7 @@ async function fetchInspectionRecords(workerId, isAdmin = false) {
     );
     throw error; // Lanza el error para que el controlador superior pueda manejarlo
   }
-}
+}*/
 
 /*async function fetchInspectionRecords(workerId, isAdmin = false) {
   try {
@@ -1624,6 +1673,173 @@ async function fetchInspectionRecords(workerId, isAdmin = false) {
 
 // Function to display records
 async function displayRecords(page = 1) {
+    const recordsContainer = document.getElementById('recordsContainer');
+    if (!recordsContainer) return;
+
+    try {
+        // Log del inicio de la función y el parámetro de página
+        console.log('Displaying records for page:', page);
+
+        // Validar si el trabajador actual está disponible
+        console.log('Current worker state:', currentWorker);
+        if (!currentWorker || !currentWorker.id) {
+            throw new Error('No worker information available');
+        }
+
+        // Mostrar estado de carga
+        recordsContainer.innerHTML = '<div class="loading-spinner"></div>';
+
+        // Obtener registros desde el backend o localStorage
+        console.log('Fetching inspection records...');
+        const records = await fetchInspectionRecords(
+            currentWorker.id,
+            currentWorker.role === 'admin'
+        );
+        console.log('Fetched records:', records);
+
+        // Limpiar el estado de carga
+        recordsContainer.innerHTML = '';
+
+        // Validar si no hay registros
+        if (!records || records.length === 0) {
+            console.warn('No inspection records found.');
+            recordsContainer.innerHTML = `
+                <p class="text-center">
+                    <span data-lang="en">No inspection records found.</span>
+                    <span data-lang="es">No se encontraron registros de inspección.</span>
+                </p>
+            `;
+            return;
+        }
+
+        // Filtrar registros según el rol del usuario
+        let filteredRecords = records;
+        console.log('Current worker role:', currentWorker.role);
+        if (currentWorker.role !== 'admin') {
+            filteredRecords = filteredRecords.filter(record =>
+                record.worker_id === currentWorker.id || record.worker === currentWorker.name
+            );
+            console.log('Filtered records for non-admin user:', filteredRecords);
+        } else {
+            // Manejar búsqueda y filtros para administradores
+            console.log('Admin search and filters active...');
+            const searchTerm = document.getElementById('recordSearchInput')?.value?.toLowerCase();
+            const statusFilter = document.getElementById('recordFilterStatus')?.value;
+
+            if (searchTerm) {
+                console.log('Applying search term filter:', searchTerm);
+                filteredRecords = filteredRecords.filter(record =>
+                    (record.worker?.toLowerCase().includes(searchTerm) ||
+                        record.worker_id?.toLowerCase().includes(searchTerm)) ||
+                    (record.truckId?.toLowerCase().includes(searchTerm) ||
+                        record.truck_id?.toLowerCase().includes(searchTerm))
+                );
+                console.log('Records after search term filter:', filteredRecords);
+            }
+
+            if (statusFilter && statusFilter !== 'all') {
+                console.log('Applying status filter:', statusFilter);
+                filteredRecords = filteredRecords.filter(record =>
+                    (record.status === statusFilter) ||
+                    (Object.values(record.data || {}).some(item => item.status === statusFilter))
+                );
+                console.log('Records after status filter:', filteredRecords);
+            }
+        }
+
+        // Ordenar registros por fecha (los más recientes primero)
+        console.log('Sorting records by date...');
+        filteredRecords.sort((a, b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date));
+        console.log('Sorted records:', filteredRecords);
+
+        // Paginación
+        const recordsPerPage = 10;
+        const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
+        const startIndex = (page - 1) * recordsPerPage;
+        const paginatedRecords = filteredRecords.slice(startIndex, startIndex + recordsPerPage);
+        console.log(`Paginated records (Page ${page}):`, paginatedRecords);
+
+        // Mostrar mensaje si no hay registros en la página actual
+        if (paginatedRecords.length === 0) {
+            console.warn('No inspection records found for this page.');
+            recordsContainer.innerHTML = `
+                <p class="text-center">
+                    <span data-lang="en">No inspection records found.</span>
+                    <span data-lang="es">No se encontraron registros de inspección.</span>
+                </p>
+            `;
+            return;
+        }
+
+        // Renderizar los registros
+        console.log('Rendering records...');
+        paginatedRecords.forEach((record) => {
+            const criticalCount = record.critical_count || Object.values(record.data || {}).filter(item => item.status === 'critical').length;
+            const warningCount = record.warning_count || Object.values(record.data || {}).filter(item => item.status === 'warning').length;
+
+            const recordItem = document.createElement('div');
+            recordItem.className = 'record-item';
+
+            recordItem.innerHTML = `
+                <div class="record-details">
+                    <strong>${record.worker || record.worker_id}</strong>
+                    <div class="record-metadata">
+                        <span class="record-timestamp">${new Date(record.created_at || record.date).toLocaleString()}</span>
+                        ${criticalCount > 0 ?
+                            `<span class="record-status status-critical">${criticalCount} Critical</span>` :
+                            ''}
+                        ${warningCount > 0 ?
+                            `<span class="record-status status-warning">${warningCount} Warning</span>` :
+                            ''}
+                    </div>
+                    <div>Truck ID: ${record.truckId || record.truck_id}</div>
+                </div>
+                <div class="record-actions">
+                    <button class="btn btn-secondary" onclick="viewRecordDetails('${record.id || record.truckId}')">
+                        <span data-lang="en">Details</span>
+                        <span data-lang="es">Detalles</span>
+                    </button>
+                    ${record.pdf_url || record.pdfUrl ?
+                        `<a href="${record.pdf_url || record.pdfUrl}" target="_blank" class="btn btn-secondary">PDF</a>` :
+                        `<button class="btn btn-secondary" onclick="downloadPDF('${record.id || record.truckId}')">
+                            <span data-lang="en">Generate PDF</span>
+                            <span data-lang="es">Generar PDF</span>
+                        </button>`
+                    }
+                </div>
+            `;
+
+            recordsContainer.appendChild(recordItem);
+        });
+
+        // Actualizar controles de paginación
+        const pageInfo = document.getElementById('pageInfo');
+        const prevPage = document.getElementById('prevPage');
+        const nextPage = document.getElementById('nextPage');
+
+        if (pageInfo) pageInfo.textContent = `Page ${page} of ${totalPages}`;
+        if (prevPage) prevPage.disabled = page === 1;
+        if (nextPage) nextPage.disabled = page === totalPages;
+
+        console.log('Pagination updated.');
+
+        // Actualizar idioma
+        updateLanguage();
+        console.log('Language updated.');
+
+    } catch (error) {
+        console.error('Error in displayRecords:', error);
+        recordsContainer.innerHTML = `
+            <p class="text-center text-error">
+                <span data-lang="en">Error loading inspection records.</span>
+                <span data-lang="es">Error al cargar los registros de inspección.</span>
+            </p>
+        `;
+        showNotification('Error loading inspection records', 'error');
+    }
+}
+
+/*async function displayRecords(page = 1) {
     const recordsContainer = document.getElementById('recordsContainer');
     if (!recordsContainer) return;
 
@@ -1770,7 +1986,7 @@ async function displayRecords(page = 1) {
         `;
         showNotification('Error loading inspection records', 'error');
     }
-}
+}*/
 
 /*async function displayRecords(page = 1) {
     const recordsContainer = document.getElementById('recordsContainer');
