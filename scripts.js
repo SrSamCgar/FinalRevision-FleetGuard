@@ -995,9 +995,9 @@ async function generateInspectionPDF(inspection) {
 	};
 	
 	const conditionText = [
-	    `Overall Score: ${condition.score.toFixed(1)}%`,
-	    `Critical Issues: ${condition.criticalCount}`,
-	    `Warning Issues: ${condition.warningCount}`
+	    `Puntuacion General: ${condition.score.toFixed(1)}%`,
+	    `Problemas Criticos: ${condition.criticalCount}`,
+	    `Problemas de Precaucion: ${condition.warningCount}`
 	];
 
         /*const condition = inspection.overallCondition;
@@ -2129,6 +2129,16 @@ async function generateInspectionPDF(inspection) {
         return false;
     }
 }*/
+async function getTruckInfo(truckId) {
+    // Simula una consulta a la base de datos o API
+    const mockDatabase = {
+        T001: { model: 'Freightliner Cascadia', year: '2022' },
+        T002: { model: 'Kenworth T680', year: '2021' },
+        T003: { model: 'Volvo VNL', year: '2023' },
+    };
+    return mockDatabase[truckId] || null;
+}
+
 async function completeInspection() {
     const inspectionEndTime = new Date();
     const duration = (inspectionEndTime - inspectionStartTime) / 1000;
@@ -2154,17 +2164,25 @@ async function completeInspection() {
             throw new Error('Invalid condition object. Missing properties.');
         }
 
+        // Obtén información adicional del camión
+        const truckInfo = await getTruckInfo(truckId); // Esta función debe implementarse
+        const model = truckInfo?.model || 'N/A';
+        const year = truckInfo?.year || 'N/A';
+
         // Continuar con el flujo
         const inspectionRecord = {
             worker: currentWorker.name,
             worker_id: currentWorker.id,
             truck_id: truckId,
+            model: model, // Añadir modelo del camión
+            year: year, // Añadir año del camión
             start_time: inspectionStartTime.toISOString(),
             end_time: inspectionEndTime.toISOString(),
             duration: duration,
             overall_condition: condition.score || null,
             critical_count: condition.criticalCount || 0,
             warning_count: condition.warningCount || 0,
+            date: new Date().toLocaleString(), // Fecha de creación
             data: { ...currentInspectionData },
         };
 
@@ -2180,6 +2198,8 @@ async function completeInspection() {
         const inspectionData = {
             worker_id: inspectionRecord.worker_id,
             truck_id: inspectionRecord.truck_id,
+            model: inspectionRecord.model, // Incluir modelo
+            year: inspectionRecord.year, // Incluir año
             start_time: inspectionRecord.start_time,
             end_time: inspectionRecord.end_time,
             duration: inspectionRecord.duration,
@@ -2187,6 +2207,7 @@ async function completeInspection() {
             pdf_url: inspectionRecord.pdf_url,
             critical_count: inspectionRecord.critical_count,
             warning_count: inspectionRecord.warning_count,
+            date: inspectionRecord.date, // Incluir fecha
             status: 'completed',
             dynamic_status:
                 inspectionRecord.critical_count > 0
@@ -2221,6 +2242,7 @@ async function completeInspection() {
         showNotification('Error saving inspection', 'error');
     }
 }
+
 
 
 
