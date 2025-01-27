@@ -2696,7 +2696,7 @@ async function fetchInspectionRecords(workerId, isAdmin = false) {
     const url = isAdmin
       ? `/api/getInspections?isAdmin=true${workerId ? `&worker_id=${workerId}` : ''}`
       : `/api/getInspections?worker_id=${workerId}`;
-
+	console.log('Fetching inspections from URL:', url); // Log de la URL generada
     const response = await fetch(url, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
