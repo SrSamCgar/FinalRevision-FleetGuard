@@ -988,12 +988,24 @@ async function generateInspectionPDF(inspection) {
 
         doc.setFontSize(12);
         doc.setFont('helvetica', 'normal');
-        const condition = inspection.overallCondition;
+	const condition = {
+	    score: inspection.overall_condition,
+	    criticalCount: inspection.critical_count,
+	    warningCount: inspection.warning_count
+	};
+	
+	const conditionText = [
+	    `Overall Score: ${condition.score.toFixed(1)}%`,
+	    `Critical Issues: ${condition.criticalCount}`,
+	    `Warning Issues: ${condition.warningCount}`
+	];
+
+        /*const condition = inspection.overallCondition;
         const conditionText = [
             `Overall Score: ${condition.score.toFixed(1)}%`,
             `Critical Issues: ${condition.criticalCount}`,
             `Warning Issues: ${condition.warningCount}`
-        ];
+        ];*/
 
         conditionText.forEach(text => {
             doc.text(text, 20, y);
