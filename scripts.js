@@ -230,6 +230,74 @@ async function login() {
 
         console.log('Data sent to API:', { workerId, password });
 
+        // Autenticación en el backend
+        const response = await fetch('/api/auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ workerId, password }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Invalid credentials');
+        }
+
+        // Asignar el usuario autenticado a currentWorker
+        currentWorker = data.user; // Variable global
+
+        console.log('Authenticated user:', currentWorker);
+
+        // Guardar en localStorage para persistencia
+        localStorage.setItem('currentWorker', JSON.stringify(currentWorker));
+
+        // Mostrar bienvenida al usuario
+        showNotification(`Welcome, ${currentWorker.name}!`, 'success');
+
+        // Cerrar todos los modales
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.style.display = 'none';
+        });
+
+        // Ocultar pantallas actuales
+        document.querySelectorAll('.screen').forEach(screen => {
+            screen.style.display = 'none';
+            screen.classList.remove('active');
+        });
+
+        // Actualizar último inicio de sesión en el backend
+        await fetch('/api/updateLastLogin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ workerId: currentWorker.id }),
+        });
+
+        // Validar y navegar según el rol del usuario
+        if (!['admin', 'worker'].includes(currentWorker.role)) {
+            throw new Error('Invalid role assigned to user');
+        }
+
+        if (currentWorker.role === 'admin') {
+            showAdminDashboard();
+        } else {
+            showScreen('truckIdScreen');
+        }
+    } catch (error) {
+        console.error('Login error:', error); // Más detalle en la consola
+        handleError(error, 'login'); // Reutilizar la función de manejo de errores
+    }
+}
+
+/*async function login() {
+    try {
+        const workerId = document.getElementById('workerId')?.value?.trim();
+        const password = document.getElementById('workerPassword')?.value?.trim();
+
+        if (!workerId || !password) {
+            throw new Error('Please fill in both fields');
+        }
+
+        console.log('Data sent to API:', { workerId, password });
+
         const response = await fetch('/api/auth', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -279,7 +347,7 @@ async function login() {
     } catch (error) {
         handleError(error, 'login');
     }
-}
+}*/
 
 /*async function login() {
     try {
@@ -538,6 +606,39 @@ function showSettings() {
 }
 // Inspection Management
 function startInspection() {
+    // Registrar el tiempo de inicio de la inspección
+    inspectionStartTime = new Date();
+    const truckId = document.getElementById('truckId').value.trim();
+
+    // Validar si el ID del camión es válido
+    if (!trucks[truckId]) {
+        showNotification('Invalid truck ID', 'error');
+        return;
+    }
+
+    // Recuperar los datos del camión seleccionado
+    const truck = trucks[truckId];
+    showNotification(`Truck selected: ${truck.model}, ${truck.year}`, 'success');
+
+    // Asignar datos del trabajador actual a la inspección
+    if (currentWorker) {
+        console.log(`Inspection started by: ${currentWorker.name}`);
+        currentInspectionData.worker = currentWorker.name;
+        currentInspectionData.worker_id = currentWorker.id;
+    } else {
+        console.warn('No authenticated worker found. Assigning inspection without worker data.');
+        currentInspectionData.worker = 'Unknown';
+        currentInspectionData.worker_id = 'N/A';
+    }
+
+    // Reiniciar datos de la inspección y actualizar la UI
+    resetInspection();
+    showScreen('inspectionScreen');
+    updateInspectionDisplay();
+    updateProgressBar();
+}
+
+/*function startInspection() {
 	inspectionStartTime = new Date();
     const truckId = document.getElementById('truckId').value.trim();
 
@@ -552,7 +653,7 @@ function startInspection() {
     showScreen('inspectionScreen');
     updateInspectionDisplay();
     updateProgressBar();
-}
+}*/
 
 function resetInspection() {
     currentIndex = 0;
@@ -1135,8 +1236,109 @@ async function getTruckInfo(truckId) {
     };
     return mockDatabase[truckId] || null;
 }
-
+//funcion para terminar la inspeccion de manera correcta
 async function completeInspection() {
+    try {
+        const inspectionEndTime = new Date();
+        const duration = (inspectionEndTime - inspectionStartTime) / 1000;
+        const truckId = document.getElementById('truckId')?.value?.trim();
+
+        // Validaciones iniciales
+        if (!inspectionStartTime) {
+            throw new Error('Inspection start time is not defined.');
+        }
+
+        if (!currentInspectionData || Object.keys(currentInspectionData).length === 0) {
+            throw new Error('Inspection data is empty or undefined.');
+        }
+
+        // Calcular la condición general
+        const condition = calculateOverallCondition(currentInspectionData);
+        if (!condition || typeof condition.score === 'undefined') {
+            throw new Error('Invalid condition object. Missing properties.');
+        }
+
+        // Obtener información adicional del camión (si es necesario)
+        const truckInfo = await getTruckInfo(truckId); // Implementar esta función si aún no existe
+        const model = truckInfo?.model || 'N/A';
+        const year = truckInfo?.year || 'N/A';
+
+        // Crear el registro de inspección
+        const inspectionRecord = {
+            worker: currentWorker.name,
+            worker_id: currentWorker.id,
+            truck_id: truckId,
+            model: model,
+            year: year,
+            start_time: inspectionStartTime.toISOString(),
+            end_time: inspectionEndTime.toISOString(),
+            duration: duration,
+            overall_condition: condition.score || null,
+            critical_count: condition.criticalCount || 0,
+            warning_count: condition.warningCount || 0,
+            date: new Date().toLocaleString(),
+            data: { ...currentInspectionData },
+        };
+
+        console.log('Inspection record before saving:', inspectionRecord);
+
+        // Generar el PDF de la inspección
+        const pdfUrl = await generateInspectionPDF(inspectionRecord);
+        inspectionRecord.pdf_url = pdfUrl;
+
+        // Crear los datos para guardar en el backend o localStorage
+        const inspectionData = {
+            worker_id: inspectionRecord.worker_id,
+            truck_id: inspectionRecord.truck_id,
+            model: inspectionRecord.model,
+            year: inspectionRecord.year,
+            start_time: inspectionRecord.start_time,
+            end_time: inspectionRecord.end_time,
+            duration: inspectionRecord.duration,
+            overall_condition: inspectionRecord.overall_condition,
+            pdf_url: inspectionRecord.pdf_url,
+            critical_count: inspectionRecord.critical_count,
+            warning_count: inspectionRecord.warning_count,
+            date: inspectionRecord.date,
+            status: 'completed',
+            dynamic_status:
+                inspectionRecord.critical_count > 0
+                    ? 'critical'
+                    : inspectionRecord.warning_count > 0
+                    ? 'warning'
+                    : 'ok',
+            created_at: new Date().toISOString(),
+        };
+
+        console.log('Inspection data sent to backend:', inspectionData);
+
+        // Guardar la inspección en el backend
+        const response = await fetch('/api/saveInspection', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(inspectionData),
+        });
+
+        if (!response.ok) throw new Error('Failed to save inspection');
+
+        // Actualizar los registros locales
+        if (!Array.isArray(window.records)) {
+            window.records = [];
+        }
+        window.records.push({ ...inspectionRecord, pdfUrl });
+        localStorage.setItem('inspectionRecords', JSON.stringify(window.records));
+
+        // Notificar y cambiar de pantalla
+        showNotification('Inspection completed and saved successfully', 'success');
+        showScreen('recordsScreen');
+        displayRecords();
+    } catch (error) {
+        console.error('Error completing inspection:', error);
+        showNotification('Error saving inspection', 'error');
+    }
+}
+
+/*async function completeInspection() {
     const inspectionEndTime = new Date();
     const duration = (inspectionEndTime - inspectionStartTime) / 1000;
     const truckId = document.getElementById('truckId').value.trim();
@@ -1238,7 +1440,7 @@ async function completeInspection() {
         console.error('Error completing inspection:', error);
         showNotification('Error saving inspection', 'error');
     }
-}
+}*/
 
 function validateNextButton(charCount, minCharLimit, maxCharLimit) {
     const nextButton = document.getElementById('nextButton');
@@ -1477,6 +1679,132 @@ async function displayRecords(page = 1) {
         // Mostrar estado de carga
         recordsContainer.innerHTML = '<div class="loading-spinner"></div>';
 
+        // Obtener registros desde el backend o localStorage
+        let records = await fetchInspectionRecords?.() || JSON.parse(localStorage.getItem('inspectionRecords') || '[]');
+
+        // Filtrar registros según el rol del usuario
+        let filteredRecords = records;
+        if (currentWorker.role !== 'admin') {
+            filteredRecords = filteredRecords.filter(record => record.worker_id === currentWorker.id || record.worker === currentWorker.name);
+        }
+
+        // Manejar búsqueda y filtros (solo para vista admin)
+        if (currentWorker.role === 'admin') {
+            const searchTerm = document.getElementById('recordSearchInput')?.value?.toLowerCase();
+            const statusFilter = document.getElementById('recordFilterStatus')?.value;
+
+            if (searchTerm) {
+                filteredRecords = filteredRecords.filter(record =>
+                    (record.worker?.toLowerCase().includes(searchTerm) ||
+                        record.worker_id?.toLowerCase().includes(searchTerm)) ||
+                    (record.truckId?.toLowerCase().includes(searchTerm) ||
+                        record.truck_id?.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            if (statusFilter && statusFilter !== 'all') {
+                filteredRecords = filteredRecords.filter(record =>
+                    (record.status === statusFilter) ||
+                    (Object.values(record.data || {}).some(item => item.status === statusFilter))
+                );
+            }
+        }
+
+        // Ordenar registros por fecha (los más recientes primero)
+        filteredRecords.sort((a, b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date));
+
+        // Paginación
+        const recordsPerPage = 10;
+        const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
+        const startIndex = (page - 1) * recordsPerPage;
+        const paginatedRecords = filteredRecords.slice(startIndex, startIndex + recordsPerPage);
+
+        // Limpiar el estado de carga
+        recordsContainer.innerHTML = '';
+
+        // Mostrar mensaje si no hay registros
+        if (paginatedRecords.length === 0) {
+            recordsContainer.innerHTML = `
+                <p class="text-center">
+                    <span data-lang="en">No inspection records found.</span>
+                    <span data-lang="es">No se encontraron registros de inspección.</span>
+                </p>
+            `;
+            return;
+        }
+
+        // Renderizar los registros
+        paginatedRecords.forEach((record) => {
+            const criticalCount = record.critical_count || Object.values(record.data || {}).filter(item => item.status === 'critical').length;
+            const warningCount = record.warning_count || Object.values(record.data || {}).filter(item => item.status === 'warning').length;
+
+            const recordItem = document.createElement('div');
+            recordItem.className = 'record-item';
+
+            recordItem.innerHTML = `
+                <div class="record-details">
+                    <strong>${record.worker || record.worker_id}</strong>
+                    <div class="record-metadata">
+                        <span class="record-timestamp">${new Date(record.created_at || record.date).toLocaleString()}</span>
+                        ${criticalCount > 0 ?
+                            `<span class="record-status status-critical">${criticalCount} Critical</span>` :
+                            ''}
+                        ${warningCount > 0 ?
+                            `<span class="record-status status-warning">${warningCount} Warning</span>` :
+                            ''}
+                    </div>
+                    <div>Truck ID: ${record.truckId || record.truck_id}</div>
+                </div>
+                <div class="record-actions">
+                    <button class="btn btn-secondary" onclick="viewRecordDetails('${record.id || record.truckId}')">
+                        <span data-lang="en">Details</span>
+                        <span data-lang="es">Detalles</span>
+                    </button>
+                    ${record.pdf_url || record.pdfUrl ?
+                        `<a href="${record.pdf_url || record.pdfUrl}" target="_blank" class="btn btn-secondary">PDF</a>` :
+                        `<button class="btn btn-secondary" onclick="downloadPDF('${record.id || record.truckId}')">
+                            <span data-lang="en">Generate PDF</span>
+                            <span data-lang="es">Generar PDF</span>
+                        </button>`
+                    }
+                </div>
+            `;
+
+            recordsContainer.appendChild(recordItem);
+        });
+
+        // Actualizar controles de paginación
+        const pageInfo = document.getElementById('pageInfo');
+        const prevPage = document.getElementById('prevPage');
+        const nextPage = document.getElementById('nextPage');
+
+        if (pageInfo) pageInfo.textContent = `Page ${page} of ${totalPages}`;
+        if (prevPage) prevPage.disabled = page === 1;
+        if (nextPage) nextPage.disabled = page === totalPages;
+
+        // Actualizar idioma
+        updateLanguage();
+
+    } catch (error) {
+        console.error('Error displaying records:', error);
+        recordsContainer.innerHTML = `
+            <p class="text-center text-error">
+                <span data-lang="en">Error loading inspection records.</span>
+                <span data-lang="es">Error al cargar los registros de inspección.</span>
+            </p>
+        `;
+        showNotification('Error loading inspection records', 'error');
+    }
+}
+
+/*async function displayRecords(page = 1) {
+    const recordsContainer = document.getElementById('recordsContainer');
+    if (!recordsContainer) return;
+
+    try {
+        // Mostrar estado de carga
+        recordsContainer.innerHTML = '<div class="loading-spinner"></div>';
+
         // Obtener registros desde la base de datos o localStorage según sea necesario
         let records = await fetchInspectionRecords?.() || JSON.parse(localStorage.getItem('inspectionRecords') || '[]');
 
@@ -1594,7 +1922,7 @@ async function displayRecords(page = 1) {
         `;
         showNotification('Error loading inspection records', 'error');
     }
-}
+}*/
 
 // Add event listeners
 document.addEventListener('DOMContentLoaded', () => {
@@ -1775,11 +2103,41 @@ async function analyzePhotoWithOpenAI(base64Images) {
 
 // Admin Dashboard Functions
 function showAdminDashboard() {
+    try {
+        // Validar el rol del usuario antes de mostrar el dashboard
+        if (!currentWorker || currentWorker.role !== 'admin') {
+            showNotification('Access denied. Admins only.', 'error');
+            return;
+        }
+
+        // Mostrar la pantalla del administrador
+        showScreen('adminScreen');
+
+        // Mostrar el botón del menú si está oculto
+        const menuToggleBtn = document.getElementById('menuToggleBtn');
+        if (menuToggleBtn) {
+            menuToggleBtn.style.display = 'block';
+        }
+
+        // Actualizar estadísticas y datos recientes
+        updateAdminStats();
+        updateRecentInspections();
+
+        // Mostrar notificación de bienvenida
+        showNotification(`Welcome back, ${currentWorker.name}!`, 'success');
+    } catch (error) {
+        console.error('Error showing admin dashboard:', error);
+        showNotification('An error occurred while loading the admin dashboard.', 'error');
+    }
+}
+
+
+/*function showAdminDashboard() {
     showScreen('adminScreen');
     document.getElementById('menuToggleBtn').style.display = 'block';
     updateAdminStats();
     updateRecentInspections();
-}
+}*/
 
 function updateAdminStats() {
     if (!window.records) window.records = [];
