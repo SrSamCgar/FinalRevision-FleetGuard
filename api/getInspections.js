@@ -11,7 +11,8 @@ export default async function handler(req, res) {
   }
 
   const { worker_id, isAdmin } = req.query; // Parámetros de la URL
-
+  console.log('Worker ID received:', worker_id); // Log del worker_id recibido
+    console.log('Is Admin received:', isAdmin);   // Log del rol recibido
   try {
     let query = supabase
       .from('inspections')
