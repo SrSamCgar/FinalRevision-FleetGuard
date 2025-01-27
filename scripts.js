@@ -8,7 +8,6 @@ let currentItemStatus = null;
 let lastCaptureTime = 0;
 let inspectionStartTime = null;
 let inspectionEndTime = null;
-let currentWorker = null; // Global para manejar al usuario autenticado
 //declarada al inicio para evitar errores
 async function handleImageProcessing(file) {
     if (!file) {
