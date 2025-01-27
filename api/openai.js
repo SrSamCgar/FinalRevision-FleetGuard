@@ -24,7 +24,9 @@ export default async function handler(req, res) {
             "Daño cosmético menor",
             "Daño estructural",
             "Problema funcional",
+            "Grietas visibles en el espejo/vidrio",
             "Conexión floja",
+            "Llanta Desinflada",
             "Falta de ajuste adecuado",
             "Acumulación de suciedad"
         ]
