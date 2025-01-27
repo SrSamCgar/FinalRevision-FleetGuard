@@ -271,7 +271,7 @@ async function login() {
         });
 
         // Validar y navegar según el rol del usuario
-        if (!['admin', 'worker'].includes(currentWorker.role)) {
+        if (!['admin', 'user'].includes(currentWorker.role)) {
             throw new Error('Invalid role assigned to user');
         }
 
