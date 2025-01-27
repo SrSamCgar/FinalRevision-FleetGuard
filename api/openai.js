@@ -17,7 +17,10 @@ export default async function handler(req, res) {
             "Desgaste moderado",
             "Requiere reparación menor",
             "Requiere reparación urgente",
-            "No funcional"
+            "No funcional",
+            "Requiere reemplazo inminente",
+            "Requiere juste",
+            "Limpieza requerida"
         ],
         issues: [
             "No presenta problemas",
