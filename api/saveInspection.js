@@ -21,7 +21,7 @@ export default async function handler(req, res) {
 
     // Format the data according to your table schema
     const inspectionData = {
-      worker_id: inspection.worker_id,
+      worker_id: user.id, // Usar el ID del usuario autenticado
       truck_id: inspection.truck_id,
       start_time: inspection.start_time,
       end_time: inspection.end_time,
