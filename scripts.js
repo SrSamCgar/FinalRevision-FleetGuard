@@ -2690,8 +2690,32 @@ function downloadPDF(index) {
     
     generateInspectionPDF(record);
 }
-// Function to display records
+//Funcion para obtencion de datos para mostrar
+async function fetchInspectionRecords(workerId, isAdmin = false) {
+  try {
+    const url = isAdmin
+      ? `/api/getInspections?isAdmin=true${workerId ? `&worker_id=${workerId}` : ''}`
+      : `/api/getInspections?worker_id=${workerId}`;
 
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch inspection records');
+    }
+
+    const data = await response.json();
+    console.log('Fetched inspection records:', data);
+    return data.inspections;
+  } catch (error) {
+    console.error('Error fetching inspection records:', error);
+    throw error;
+  }
+}
+
+// Function to display records
 async function displayRecords(page = 1) {
     const recordsContainer = document.getElementById('recordsContainer');
     if (!recordsContainer) return;
@@ -2818,289 +2842,6 @@ async function displayRecords(page = 1) {
     }
 }
 
-/*async function displayRecords(page = 1) {
-    const recordsContainer = document.getElementById('recordsContainer');
-    if (!recordsContainer) return;
-
-    try {
-        // Mostrar estado de carga
-        recordsContainer.innerHTML = '<div class="loading-spinner"></div>';
-
-        // Obtener registros desde la base de datos o localStorage según sea necesario
-        let records = await fetchInspectionRecords?.() || JSON.parse(localStorage.getItem('inspectionRecords') || '[]');
-
-        // Filtrar registros según el rol del usuario
-        let filteredRecords = records;
-        if (currentWorker.role !== 'admin') {
-            filteredRecords = filteredRecords.filter(record => record.worker_id === currentWorker.id || record.worker === currentWorker.name);
-        }
-
-        // Manejar búsqueda y filtros (solo para vista admin)
-        if (currentWorker.role === 'admin') {
-            const searchTerm = document.getElementById('recordSearchInput')?.value?.toLowerCase();
-            const statusFilter = document.getElementById('recordFilterStatus')?.value;
-
-            if (searchTerm) {
-                filteredRecords = filteredRecords.filter(record => 
-                    (record.worker?.toLowerCase().includes(searchTerm) ||
-                    record.worker_id?.toLowerCase().includes(searchTerm)) ||
-                    (record.truckId?.toLowerCase().includes(searchTerm) ||
-                    record.truck_id?.toLowerCase().includes(searchTerm))
-                );
-            }
-
-            if (statusFilter && statusFilter !== 'all') {
-                filteredRecords = filteredRecords.filter(record => 
-                    (record.status === statusFilter) ||
-                    (Object.values(record.data || {}).some(item => item.status === statusFilter))
-                );
-            }
-        }
-
-        // Ordenar registros por fecha (los más recientes primero)
-        filteredRecords.sort((a, b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date));
-
-        // Paginación
-        const recordsPerPage = 10;
-        const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
-        const startIndex = (page - 1) * recordsPerPage;
-        const paginatedRecords = filteredRecords.slice(startIndex, startIndex + recordsPerPage);
-
-        // Limpiar el estado de carga
-        recordsContainer.innerHTML = '';
-
-        // Mostrar mensaje si no hay registros
-        if (paginatedRecords.length === 0) {
-            recordsContainer.innerHTML = `
-                <p class="text-center">
-                    <span data-lang="en">No inspection records found.</span>
-                    <span data-lang="es">No se encontraron registros de inspección.</span>
-                </p>
-            `;
-            return;
-        }
-
-        // Renderizar los registros
-        paginatedRecords.forEach((record) => {
-            const criticalCount = record.critical_count || Object.values(record.data || {}).filter(item => item.status === 'critical').length;
-            const warningCount = record.warning_count || Object.values(record.data || {}).filter(item => item.status === 'warning').length;
-
-            const recordItem = document.createElement('div');
-            recordItem.className = 'record-item';
-
-            recordItem.innerHTML = `
-                <div class="record-details">
-                    <strong>${record.worker || record.worker_id}</strong>
-                    <div class="record-metadata">
-                        <span class="record-timestamp">${new Date(record.created_at || record.date).toLocaleString()}</span>
-                        ${criticalCount > 0 ? 
-                            `<span class="record-status status-critical">${criticalCount} Critical</span>` : 
-                            ''}
-                        ${warningCount > 0 ? 
-                            `<span class="record-status status-warning">${warningCount} Warning</span>` : 
-                            ''}
-                    </div>
-                    <div>Truck ID: ${record.truckId || record.truck_id}</div>
-                </div>
-                <div class="record-actions">
-                    <button class="btn btn-secondary" onclick="viewRecordDetails('${record.id || record.truckId}')">
-                        <span data-lang="en">Details</span>
-                        <span data-lang="es">Detalles</span>
-                    </button>
-                    ${record.pdf_url || record.pdfUrl ? 
-                        `<a href="${record.pdf_url || record.pdfUrl}" target="_blank" class="btn btn-secondary">PDF</a>` : 
-                        `<button class="btn btn-secondary" onclick="downloadPDF('${record.id || record.truckId}')">
-                            <span data-lang="en">Generate PDF</span>
-                            <span data-lang="es">Generar PDF</span>
-                        </button>`
-                    }
-                </div>
-            `;
-
-            recordsContainer.appendChild(recordItem);
-        });
-
-        // Actualizar controles de paginación
-        const pageInfo = document.getElementById('pageInfo');
-        const prevPage = document.getElementById('prevPage');
-        const nextPage = document.getElementById('nextPage');
-
-        if (pageInfo) pageInfo.textContent = `Page ${page} of ${totalPages}`;
-        if (prevPage) prevPage.disabled = page === 1;
-        if (nextPage) nextPage.disabled = page === totalPages;
-
-        // Actualizar idioma
-        updateLanguage();
-
-    } catch (error) {
-        console.error('Error displaying records:', error);
-        recordsContainer.innerHTML = `
-            <p class="text-center text-error">
-                <span data-lang="en">Error loading inspection records.</span>
-                <span data-lang="es">Error al cargar los registros de inspección.</span>
-            </p>
-        `;
-        showNotification('Error loading inspection records', 'error');
-    }
-}
-
-/*function displayRecords(page = 1) {
-    const recordsContainer = document.getElementById('recordsContainer');
-    if (!recordsContainer) return;
-    
-    // Get all records
-    let records = JSON.parse(localStorage.getItem('inspectionRecords') || '[]');
-    
-    // Filter records based on user role
-    if (currentWorker.role !== 'admin') {
-        records = records.filter(record => record.worker === currentWorker.name);
-    }
-
-    // Handle search and filters if they exist (for admin view)
-    if (currentWorker.role === 'admin') {
-        const searchTerm = document.getElementById('recordSearchInput')?.value?.toLowerCase();
-        const statusFilter = document.getElementById('recordFilterStatus')?.value;
-        
-        if (searchTerm) {
-            records = records.filter(record => 
-                record.worker.toLowerCase().includes(searchTerm) ||
-                record.truckId.toLowerCase().includes(searchTerm)
-            );
-        }
-        
-        if (statusFilter && statusFilter !== 'all') {
-            records = records.filter(record => 
-                Object.values(record.data).some(item => item.status === statusFilter)
-            );
-        }
-    }
-
-    // Sort records by date (newest first)
-    records.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-    // Pagination (only for admin view)
-    const recordsPerPage = 10;
-    let paginatedRecords = records;
-    let totalPages = 1;
-    
-    if (currentWorker.role === 'admin') {
-        totalPages = Math.ceil(records.length / recordsPerPage);
-        const startIndex = (page - 1) * recordsPerPage;
-        paginatedRecords = records.slice(startIndex, startIndex + recordsPerPage);
-        
-        // Update pagination controls if they exist
-        const pageInfo = document.getElementById('pageInfo');
-        const prevPage = document.getElementById('prevPage');
-        const nextPage = document.getElementById('nextPage');
-        
-        if (pageInfo) pageInfo.textContent = `Page ${page} of ${totalPages}`;
-        if (prevPage) prevPage.disabled = page === 1;
-        if (nextPage) nextPage.disabled = page === totalPages;
-    }
-
-    recordsContainer.innerHTML = '';
-
-    if (paginatedRecords.length === 0) {
-        recordsContainer.innerHTML = `
-            <p class="text-center">
-                <span data-lang="en">No inspection records found.</span>
-                <span data-lang="es">No se encontraron registros de inspección.</span>
-            </p>
-        `;
-        return;
-    }
-
-    paginatedRecords.forEach((record) => {
-        let criticalCount = 0;
-        let warningCount = 0;
-
-        Object.values(record.data).forEach(item => {
-            if (item.status === 'critical') criticalCount++;
-            if (item.status === 'warning') warningCount++;
-        });
-
-        const recordItem = document.createElement('div');
-        recordItem.className = 'record-item';
-
-        // Different layouts for admin and user views
-        if (currentWorker.role === 'admin') {
-            recordItem.innerHTML = `
-                <div class="record-details">
-                    <strong>${record.worker}</strong>
-                    <div class="record-metadata">
-                        <span class="record-timestamp">${new Date(record.date).toLocaleString()}</span>
-                        ${criticalCount > 0 ? 
-                            `<span class="record-status status-critical">${criticalCount} Critical</span>` : 
-                            ''}
-                        ${warningCount > 0 ? 
-                            `<span class="record-status status-warning">${warningCount} Warning</span>` : 
-                            ''}
-                    </div>
-                    <div>Truck ID: ${record.truckId}</div>
-                </div>
-                <div class="record-actions">
-                    <button class="btn btn-secondary" onclick="viewRecordDetails('${record.truckId}')">
-                        <span data-lang="en">Details</span>
-                        <span data-lang="es">Detalles</span>
-                    </button>
-                    <button class="btn btn-secondary" onclick="downloadPDF('${record.truckId}')">PDF</button>
-                </div>
-            `;
-        } else {
-            //Vista con opcion a descargar pero tambien salvado en linea
-		recordItem.innerHTML = `
-			    <div class="record-details">
-			        <strong>${record.worker}</strong>
-			        <div class="record-metadata">
-			            <span class="record-timestamp">${new Date(record.date).toLocaleString()}</span>
-			            ${criticalCount > 0 ? 
-			                `<span class="record-status status-critical">${criticalCount} Critical</span>` : 
-			                ''}
-			            ${warningCount > 0 ? 
-			                `<span class="record-status status-warning">${warningCount} Warning</span>` : 
-			                ''}
-			        </div>
-			        <div>Truck ID: ${record.truckId}</div>
-			    </div>
-			    <div class="record-actions">
-			        <button class="btn btn-secondary" onclick="viewRecordDetails('${record.truckId}')">
-			            <span data-lang="en">Details</span>
-			            <span data-lang="es">Detalles</span>
-			        </button>
-			        ${record.pdfUrl ? 
-			            `<a href="${record.pdfUrl}" download class="btn btn-secondary">Download PDF</a>` :
-			            ''
-			        }
-			        <button class="btn btn-secondary" onclick="downloadPDF('${record.truckId}')">
-			            <span data-lang="en">Generate PDF</span>
-			            <span data-lang="es">Generar PDF</span>
-			        </button>
-			    </div>
-			`;
-		
-		// Simpler view for regular users
-            /*recordItem.innerHTML = `
-                <div>
-                    <p><strong>${record.truckId} - ${record.date}</strong></p>
-                    <div class="record-metadata">
-                        ${criticalCount > 0 ? 
-                            `<span class="record-status status-critical">${criticalCount} Critical</span>` : 
-                            ''}
-                        ${warningCount > 0 ? 
-                            `<span class="record-status status-warning">${warningCount} Warning</span>` : 
-                            ''}
-                    </div>
-                </div>
-                <button class="btn" onclick="downloadPDF('${record.truckId}')">PDF</button>
-            `;
-        }
-
-        recordsContainer.appendChild(recordItem);
-    });
-    
-    // Update language display
-    updateLanguage();
-}*/
 // Add event listeners
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('recordSearchInput')?.addEventListener('input', 
@@ -3112,57 +2853,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('nextPage')?.addEventListener('click', 
         () => displayRecords(++currentPage));
 });
-/*function displayRecords() {
-    const recordsContainer = document.getElementById('recordsContainer');
-    if (!recordsContainer) return;
-    
-    recordsContainer.innerHTML = '';
-    
-    const records = JSON.parse(localStorage.getItem('inspectionRecords') || '[]');
-    
-    if (records.length === 0) {
-        recordsContainer.innerHTML = `
-            <p>
-                <span data-lang="en">No inspection records found.</span>
-                <span data-lang="es">No se encontraron registros de inspección.</span>
-            </p>
-        `;
-        return;
-    }
-    records.forEach((record, index) => {
-        let criticalCount = 0;
-        let warningCount = 0;
 
-        Object.values(record.data).forEach(item => {
-            if (item.status === 'critical') criticalCount++;
-            if (item.status === 'warning') warningCount++;
-        });
-
-        const recordItem = document.createElement('div');
-        recordItem.className = 'record-item';
-
-        recordItem.innerHTML = `
-            <div>
-                <p><strong>${record.worker}</strong></p>
-                <p>${record.truckId} - ${record.date}</p>
-                <div class="record-metadata">
-                    ${criticalCount > 0 ? 
-                        `<span class="record-status status-critical">${criticalCount} Critical</span>` : 
-                        ''}
-                    ${warningCount > 0 ? 
-                        `<span class="record-status status-warning">${warningCount} Warning</span>` : 
-                        ''}
-                </div>
-            </div>
-            <button class="btn" onclick="downloadPDF(${index})">PDF</button>
-        `;
-
-        recordsContainer.appendChild(recordItem);
-    });
-    
-    // Update language display
-    updateLanguage();
-}*/
 async function resizeImage(file, maxWidth = 1280, maxHeight = 960, quality = 0.75) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -3537,6 +3228,142 @@ function updateMetricsDisplay() {
 	  }
 
 }
+//funcion para mostrar y seleccionar los records basandome en el usuario
+async function displayRecords(page = 1) {
+    const recordsContainer = document.getElementById('recordsContainer');
+    if (!recordsContainer) return;
+
+    try {
+        // Mostrar estado de carga
+        recordsContainer.innerHTML = '<div class="loading-spinner"></div>';
+
+        // Obtener registros desde la base de datos o localStorage según sea necesario
+        let records = await fetchInspectionRecords?.() || JSON.parse(localStorage.getItem('inspectionRecords') || '[]');
+
+        // Filtrar registros según el rol del usuario
+        let filteredRecords = records;
+
+        if (currentWorker.role === 'admin') {
+            // Si es admin, permitir filtro manual por worker_id o mostrar todos los registros
+            const workerFilter = document.getElementById('workerFilterInput')?.value.trim();
+
+            if (workerFilter) {
+                filteredRecords = filteredRecords.filter(record => record.worker_id === workerFilter);
+            }
+        } else {
+            // Si no es admin, filtrar solo por el worker_id actual
+            filteredRecords = filteredRecords.filter(record => record.worker_id === currentWorker.id);
+        }
+
+        // Manejar búsqueda y filtros (solo para vista admin)
+        if (currentWorker.role === 'admin') {
+            const searchTerm = document.getElementById('recordSearchInput')?.value?.toLowerCase();
+            const statusFilter = document.getElementById('recordFilterStatus')?.value;
+
+            if (searchTerm) {
+                filteredRecords = filteredRecords.filter(record => 
+                    (record.worker?.toLowerCase().includes(searchTerm) ||
+                    record.worker_id?.toLowerCase().includes(searchTerm)) ||
+                    (record.truckId?.toLowerCase().includes(searchTerm) ||
+                    record.truck_id?.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            if (statusFilter && statusFilter !== 'all') {
+                filteredRecords = filteredRecords.filter(record => 
+                    (record.status === statusFilter) ||
+                    (Object.values(record.data || {}).some(item => item.status === statusFilter))
+                );
+            }
+        }
+
+        // Ordenar registros por fecha (los más recientes primero)
+        filteredRecords.sort((a, b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date));
+
+        // Paginación
+        const recordsPerPage = 10;
+        const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
+        const startIndex = (page - 1) * recordsPerPage;
+        const paginatedRecords = filteredRecords.slice(startIndex, startIndex + recordsPerPage);
+
+        // Limpiar el estado de carga
+        recordsContainer.innerHTML = '';
+
+        // Mostrar mensaje si no hay registros
+        if (paginatedRecords.length === 0) {
+            recordsContainer.innerHTML = `
+                <p class="text-center">
+                    <span data-lang="en">No inspection records found.</span>
+                    <span data-lang="es">No se encontraron registros de inspección.</span>
+                </p>
+            `;
+            return;
+        }
+
+        // Renderizar los registros
+        paginatedRecords.forEach((record) => {
+            const criticalCount = record.critical_count || Object.values(record.data || {}).filter(item => item.status === 'critical').length;
+            const warningCount = record.warning_count || Object.values(record.data || {}).filter(item => item.status === 'warning').length;
+
+            const recordItem = document.createElement('div');
+            recordItem.className = 'record-item';
+
+            recordItem.innerHTML = `
+                <div class="record-details">
+                    <strong>${record.worker || record.worker_id}</strong>
+                    <div class="record-metadata">
+                        <span class="record-timestamp">${new Date(record.created_at || record.date).toLocaleString()}</span>
+                        ${criticalCount > 0 ? 
+                            `<span class="record-status status-critical">${criticalCount} Critical</span>` : 
+                            ''}
+                        ${warningCount > 0 ? 
+                            `<span class="record-status status-warning">${warningCount} Warning</span>` : 
+                            ''}
+                    </div>
+                    <div>Truck ID: ${record.truckId || record.truck_id}</div>
+                </div>
+                <div class="record-actions">
+                    <button class="btn btn-secondary" onclick="viewRecordDetails('${record.id || record.truckId}')">
+                        <span data-lang="en">Details</span>
+                        <span data-lang="es">Detalles</span>
+                    </button>
+                    ${record.pdf_url || record.pdfUrl ? 
+                        `<a href="${record.pdf_url || record.pdfUrl}" target="_blank" class="btn btn-secondary">PDF</a>` : 
+                        `<button class="btn btn-secondary" onclick="downloadPDF('${record.id || record.truckId}')">
+                            <span data-lang="en">Generate PDF</span>
+                            <span data-lang="es">Generar PDF</span>
+                        </button>`
+                    }
+                </div>
+            `;
+
+            recordsContainer.appendChild(recordItem);
+        });
+
+        // Actualizar controles de paginación
+        const pageInfo = document.getElementById('pageInfo');
+        const prevPage = document.getElementById('prevPage');
+        const nextPage = document.getElementById('nextPage');
+
+        if (pageInfo) pageInfo.textContent = `Page ${page} of ${totalPages}`;
+        if (prevPage) prevPage.disabled = page === 1;
+        if (nextPage) nextPage.disabled = page === totalPages;
+
+        // Actualizar idioma
+        updateLanguage();
+
+    } catch (error) {
+        console.error('Error displaying records:', error);
+        recordsContainer.innerHTML = `
+            <p class="text-center text-error">
+                <span data-lang="en">Error loading inspection records.</span>
+                <span data-lang="es">Error al cargar los registros de inspección.</span>
+            </p>
+        `;
+        showNotification('Error loading inspection records', 'error');
+    }
+}
+
 /*function updateMetricsDisplay() {
     // Get all inspection records
     const records = JSON.parse(localStorage.getItem('inspectionRecords') || '[]');
