@@ -2194,6 +2194,18 @@ function validateInputs() {
     return true;
 }
 
+function togglePasswordVisibility() {
+        const passwordField = document.getElementById('userPassword');
+        const toggleButton = document.querySelector('.toggle-password');
+        if (passwordField.type === 'password') {
+            passwordField.type = 'text';
+            toggleButton.textContent = '🙈'; 
+        } else {
+            passwordField.type = 'password';
+            toggleButton.textContent = '👁️';
+        }
+    }
+
 // Mobile Optimization Functions
 function initializeMobileOptimizations() {
     setupTouchHandling();
