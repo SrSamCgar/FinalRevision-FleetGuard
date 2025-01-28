@@ -9,6 +9,7 @@ let lastCaptureTime = 0;
 let inspectionStartTime = null;
 let inspectionEndTime = null;
 let currentPage = 1;
+let workers = {};
 const recordsPerPage = 10;
 //declarada al inicio para evitar errores
 async function handleImageProcessing(file) {
@@ -1907,7 +1908,50 @@ function viewRecordDetails(recordId) {
         showNotification('Error viewing record details', 'error');
     }
 }
-function displayUsers() {
+//Funcion para ver los usuarios dentro de admin
+async function displayUsers() {
+    const tableBody = document.getElementById('userTableBody');
+    if (!tableBody) return;
+    
+    try {
+        // Fetch workers from Supabase
+        const response = await fetch('/api/getWorkers');
+        const data = await response.json();
+        
+        if (!data.workers) {
+            throw new Error('No workers data received');
+        }
+        
+        workers = data.workers.reduce((acc, worker) => {
+            acc[worker.id] = worker;
+            return acc;
+        }, {});
+        
+        tableBody.innerHTML = '';
+        
+        Object.entries(workers).forEach(([id, user]) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${user.id}</td>
+                <td>${user.name}</td>
+                <td>${user.role}</td>
+                <td>${user.last_activity || 'No activity'}</td>
+                <td>${user.status}</td>
+                <td>
+                    <button class="btn btn-secondary" onclick="editUser('${id}')">Edit</button>
+                    <button class="btn btn-secondary" onclick="toggleUserStatus('${id}')">
+                        ${user.status === 'active' ? 'Deactivate' : 'Activate'}
+                    </button>
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+    } catch (error) {
+        console.error('Error fetching workers:', error);
+        showNotification('Error loading users', 'error');
+    }
+}
+/*function displayUsers() {
     const tableBody = document.getElementById('userTableBody');
     if (!tableBody) return;
     
@@ -1930,7 +1974,7 @@ function displayUsers() {
         `;
         tableBody.appendChild(row);
     });
-}
+}*/
 function updateMetricsDisplay() {
     // Get all inspection records
     const records = JSON.parse(localStorage.getItem('inspectionRecords') || '[]');
