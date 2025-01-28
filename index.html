@@ -20,7 +20,7 @@
     <div id="customNotification" class="custom-notification"></div>
 
     <!-- Global Controls -->
-    <button id="languageToggleBtn" class="toggle-btn language-toggle" onclick="toggleLanguage()">
+    <!--<button id="languageToggleBtn" class="toggle-btn language-toggle" onclick="toggleLanguage()">
     <span data-lang="en" style="display: none;">🇺🇸 EN</span>
     <span data-lang="es">🇲🇽 ES</span>
     </button>
@@ -28,12 +28,12 @@
     <button id="logoutBtn" class="logout-btn" onclick="backToLogin()">
     <span data-lang="en">Logout</span>
     <span data-lang="es">Cerrar Sesión</span>
-    </button>
+    </button> ->
 
     <!-- Login Screen -->
     <div id="loginScreen" class="screen container">
         <div class="card">
-            <h1 class="title">FleetGuard V 3.4.6</h1>
+            <h1 class="title">FleetGuard V 3.4.7</h1>
             <div class="input-group">
                 <input type="text" id="workerId" 
                        placeholder="Worker ID / ID de Trabajador" 
@@ -130,6 +130,17 @@
     </div>
 <!-- Admin Dashboard -->
 <div class="admin-header">
+    <div class="nav-controls">
+    <button class="toggle-btn language-toggle" onclick="toggleLanguage()">
+        <span data-lang="en" style="display: none;">🇺🇸 EN</span>
+        <span data-lang="es">🇲🇽 ES</span>
+    </button>
+    <button class="toggle-btn theme-toggle" onclick="toggleTheme()">🌓</button>
+    <button class="toggle-btn logout-btn" onclick="backToLogin()">
+        <span data-lang="en">Exit</span>
+        <span data-lang="es">Salir</span>
+    </button>
+</div>
 </div>
     <div id="adminScreen" class="screen admin-container">
         <div class="card">
