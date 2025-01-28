@@ -2194,6 +2194,16 @@ function validateInputs() {
     return true;
 }
 
+document.getElementById('userName').addEventListener('input', function (event) {
+        const input = event.target;
+        const regex = /^[A-Za-z\s]*$/; 
+        if (!regex.test(input.value)) {
+            input.setCustomValidity("Only letters and spaces are allowed.");
+        } else {
+            input.setCustomValidity("");
+        }
+    });
+
 function togglePasswordVisibility() {
         const passwordField = document.getElementById('userPassword');
         const toggleButton = document.querySelector('.toggle-password');
