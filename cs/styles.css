@@ -1,5 +1,13 @@
 /*Estos estilos son para arreglar los botones de tema e idioma en mobil y ahora las notificaciones tambien xD*/
 @media screen and (max-width: 768px) {
+     .records-controls {
+        flex-direction: column;
+    }
+    .records-controls .search-input,
+    .records-controls .filter-select,
+    .records-controls .btn {
+        width: 100%;
+    }
     .toggle-btn {
         position: fixed;
         z-index: 10;
@@ -68,6 +76,16 @@
     .screen:not(#loginScreen) {
         display: none;
     }
+    .admin-header .btn-secondary {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: auto;
+        z-index: 1000;
+    }
+    #loginScreen .admin-header {
+        display: none; /* Hide header in login screen */
+    }
 }
 .screen {
     width: 100%;
@@ -92,8 +110,15 @@
     gap: var(--spacing-md);
     margin-bottom: var(--spacing-lg);
     flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 15px;
 }
 
+.records-controls .search-input,
+    .records-controls .filter-select,
+    .records-controls .btn {
+        width: 100%;
+    }
 .search-input, .filter-select {
     min-height: 40px;
     padding: 8px 12px;
