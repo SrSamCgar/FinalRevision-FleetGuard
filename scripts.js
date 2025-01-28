@@ -2340,7 +2340,7 @@ function filterUsers() {
   console.log("filterUsers function called. Functionality to be implemented.");
   // Aquí agregarás la lógica para filtrar usuarios en el futuro
 }
-
+/*/
 function togglePasswordVisibility() {
         const passwordField = document.getElementById('userPassword');
         const toggleButton = document.querySelector('.toggle-password');
@@ -2352,7 +2352,7 @@ function togglePasswordVisibility() {
             toggleButton.textContent = '👁️'; // Cambia el ícono para indicar "mostrar"
         }
     }
-/*/
+
     // Validación en tiempo real para el campo userName
     document.getElementById('userName').addEventListener('input', function (event) {
         const input = event.target;
