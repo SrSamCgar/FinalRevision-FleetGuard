@@ -2363,6 +2363,28 @@ function filterUsers() {
   // Aquí agregarás la lógica para filtrar usuarios en el futuro
 }
 
+function togglePasswordVisibility() {
+        const passwordField = document.getElementById('userPassword');
+        const toggleButton = document.querySelector('.toggle-password');
+        if (passwordField.type === 'password') {
+            passwordField.type = 'text';
+            toggleButton.textContent = '🙈'; // Cambia el ícono para indicar "ocultar"
+        } else {
+            passwordField.type = 'password';
+            toggleButton.textContent = '👁️'; // Cambia el ícono para indicar "mostrar"
+        }
+    }
+
+    // Validación en tiempo real para el campo userName
+    document.getElementById('userName').addEventListener('input', function (event) {
+        const input = event.target;
+        const regex = /^[A-Za-z\s]*$/; // Permite solo letras y espacios
+        if (!regex.test(input.value)) {
+            input.setCustomValidity("Only letters and spaces are allowed.");
+        } else {
+            input.setCustomValidity("");
+        }
+    });
 // Export functions to window
 Object.assign(window, {
     login,
