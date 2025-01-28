@@ -1062,7 +1062,7 @@ th, td {
 
 .modal-content {
     background-color: white;
-    margin: 10% auto;
+    margin: 0% auto;
     padding: 2rem;
     border-radius: 16px;
     width: 90%;
