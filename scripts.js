@@ -412,7 +412,77 @@ function showSettings() {
     document.getElementById('themePreference').value = savedTheme;
 }
 // Inspection Management
-function startInspection() {
+async function startInspection() {
+    try {
+        // Registrar el tiempo de inicio de la inspección
+        inspectionStartTime = new Date();
+        const truckId = document.getElementById('truckId').value.trim().toUpperCase();
+
+        // Validar si el ID del camión está en el formato correcto
+        const truckIdPattern = /^T\d{3}$/;
+        if (!truckIdPattern.test(truckId)) {
+            showNotification('Invalid truck ID format. Must be T followed by 3 digits (e.g., T001)', 'error');
+            return;
+        }
+
+        // Show loading state
+        const startButton = document.querySelector('[onclick="startInspection()"]');
+        startButton.disabled = true;
+        startButton.innerHTML = '<span class="loading-spinner"></span> Validating...';
+
+        // Fetch truck data from Supabase
+        const response = await fetch(`/api/getTruck?truckId=${truckId}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+            showNotification(data.error || 'Error validating truck ID', 'error');
+            return;
+        }
+
+        // Validate truck status
+        if (data.status !== 'active') {
+            showNotification(`Truck ${truckId} is currently ${data.status}`, 'warning');
+            return;
+        }
+
+        showNotification(`Selected: ${data.model} (${data.year})`, 'success');
+
+        // Asignar datos del trabajador actual a la inspección
+        if (currentWorker) {
+            console.log(`Inspection started by: ${currentWorker.name}`);
+            currentInspectionData.worker = currentWorker.name;
+            currentInspectionData.worker_id = currentWorker.id;
+        } else {
+            console.warn('No authenticated worker found. Assigning inspection without worker data.');
+            currentInspectionData.worker = 'Unknown';
+            currentInspectionData.worker_id = 'N/A';
+        }
+
+        // Save truck information in the inspection data
+        currentInspectionData.truckId = truckId;
+        currentInspectionData.truckModel = data.model;
+        currentInspectionData.truckYear = data.year;
+
+        // Reiniciar datos de la inspección y actualizar la UI
+        resetInspection();
+        showScreen('inspectionScreen');
+        updateInspectionDisplay();
+        updateProgressBar();
+
+    } catch (error) {
+        console.error('Error starting inspection:', error);
+        showNotification('Error starting inspection', 'error');
+    } finally {
+        // Reset button state
+        const startButton = document.querySelector('[onclick="startInspection()"]');
+        startButton.disabled = false;
+        startButton.innerHTML = `
+            <span data-lang="en">Start Inspection</span>
+            <span data-lang="es">Iniciar Inspección</span>
+        `;
+    }
+}
+/*function startInspection() {
     // Registrar el tiempo de inicio de la inspección
     inspectionStartTime = new Date();
     const truckId = document.getElementById('truckId').value.trim();
@@ -443,7 +513,7 @@ function startInspection() {
     showScreen('inspectionScreen');
     updateInspectionDisplay();
     updateProgressBar();
-}
+}*/
 
 function resetInspection() {
     currentIndex = 0;
