@@ -2457,6 +2457,60 @@ async function handleUserSubmit(event) {
     const submitButton = form.querySelector('button[type="submit"]');
     
     try {
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="loading-spinner"></span> Saving...';
+        
+        const userData = {
+            id: form.userId.value,
+            name: form.userName.value,
+            email: form.userEmail.value,
+            password_hash: form.userPassword.value,
+            role: form.userRole.value
+        };
+
+        // Log the request for debugging
+        console.log('Sending request to:', '/api/createWorker');
+        console.log('User data:', userData);
+
+        const response = await fetch('/api/createWorker', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(userData)
+        });
+
+        // Log the response for debugging
+        console.log('Response status:', response.status);
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to create user');
+        }
+
+        closeUserModal();
+        await displayUsers();
+        showNotification('User created successfully', 'success');
+        
+    } catch (error) {
+        console.error('Error creating user:', error);
+        showNotification(
+            'Failed to create user. Please try again or contact support.', 
+            'error'
+        );
+    } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Save';
+    }
+}
+/*async function handleUserSubmit(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const submitButton = form.querySelector('button[type="submit"]');
+    
+    try {
         // Disable submit button and show loading state
         submitButton.disabled = true;
         submitButton.innerHTML = '<span class="loading-spinner"></span> Saving...';
@@ -2496,7 +2550,7 @@ async function handleUserSubmit(event) {
         submitButton.disabled = false;
         submitButton.textContent = 'Save';
     }
-}
+}*/
 /*function handleUserSubmit(event) {
     event.preventDefault();
     
