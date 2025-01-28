@@ -47,6 +47,27 @@
     textarea {
         font-size: 16px !important;
     }
+    /*Arreglos para que no puedan scrollear mucho en movil*/
+    body.login-screen {
+        overflow: hidden;
+        height: 100vh;
+        position: fixed;
+        width: 100%;
+    }
+
+    #loginScreen {
+        height: 100vh;
+        overflow-y: auto;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+    }
+
+    .screen:not(#loginScreen) {
+        display: none;
+    }
 }
 .screen {
     width: 100%;
