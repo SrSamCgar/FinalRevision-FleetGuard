@@ -27,7 +27,9 @@ export default async function handler(req, res) {
             "Problema funcional",
             "Conexión floja",
             "Falta de ajuste adecuado",
-            "Acumulación de suciedad"
+            "Acumulación de suciedad",
+            "Pérdida total de presión",
+            "Objeto punzante visible"
         ]
     };
 
