@@ -576,8 +576,39 @@ function updateThemePreference(theme) {
     document.body.classList.toggle('dark-theme', theme === 'dark');
     showNotification('Theme preference updated', 'success');
 }
-
+//funcion para traducir en vivo
 function updateLanguage() {
+    // Cambiar la visibilidad de los elementos según el idioma
+    document.querySelectorAll('[data-lang]').forEach(el => {
+        el.style.display = el.getAttribute('data-lang') === currentLanguage ? 'inline' : 'none';
+    });
+
+    // Mantener la visibilidad de los botones de estado
+    document.querySelectorAll('.status-btn span').forEach(span => {
+        if (span.getAttribute('data-lang') === currentLanguage) {
+            span.style.display = 'inline';
+        } else {
+            span.style.display = 'none';
+        }
+    });
+
+    // Manejar las traducciones para el elemento de inspección actual
+    if (currentIndex !== undefined && inspectionItems[currentIndex]) {
+        const item = inspectionItems[currentIndex];
+        const nameElement = document.getElementById('currentName');
+        const descElement = document.getElementById('currentDescription');
+        
+        if (nameElement && item.name) {
+            nameElement.textContent = `${item.icon} ${item.name[currentLanguage]}`;
+        }
+        
+        if (descElement && item.description) {
+            descElement.textContent = item.description[currentLanguage];
+        }
+    }
+}
+
+/*function updateLanguage() {
     document.querySelectorAll('[data-lang]').forEach(el => {
         el.style.display = el.getAttribute('data-lang') === currentLanguage ? 'inline' : 'none';
     });
@@ -590,7 +621,7 @@ function updateLanguage() {
             span.style.display = 'none';
         }
     });
-}
+}*/
 //  showSettings function
 function showSettings() {
     toggleSidebar();
@@ -3220,14 +3251,25 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize buttons
     initializeStatusButtons();
     initializeLoginButtons(); // Add this line
-    
+    initializeScrollBehavior();
     // Initial language update
     updateLanguage();
     
     // Initialize any other necessary components
     setupEventListeners();
 });
-
+function initializeScrollBehavior() {
+    if (window.innerWidth <= 768) {  // Mobile devices
+        document.body.classList.add('login-screen');
+        
+        // Remove the class when moving to other screens
+        document.querySelectorAll('.btn').forEach(button => {
+            button.addEventListener('click', () => {
+                document.body.classList.remove('login-screen');
+            });
+        });
+    }
+}
 //error handler
 function handleError(error, context) {
     console.error(`Error in ${context}:`, error);
