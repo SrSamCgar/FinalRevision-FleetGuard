@@ -17,7 +17,8 @@ export default async function handler(req, res) {
             "Desgaste moderado",
             "Requiere reparación menor",
             "Requiere reparación urgente",
-            "No funcional"
+            "No funcional",
+            "Llanta ponchada"
         ],
         issues: [
             "No presenta problemas",
