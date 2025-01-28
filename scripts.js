@@ -2023,11 +2023,16 @@ function updateRecentInspections() {
 }
 
 // User Management Functions
-function showUserManagement() {
+async function showUserManagement() {
+    toggleSidebar();
+    showScreen('userManagementScreen');
+    await displayUsers();
+}
+/*function showUserManagement() {
     toggleSidebar();
     showScreen('userManagementScreen');
     displayUsers();
-}
+}*/
 //funcion de pantalla de metricas que se limpia
 function showMetrics() {
     cleanupCharts(); // Add this line
