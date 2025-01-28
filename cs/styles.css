@@ -1,3 +1,38 @@
+/*Estilos para el formato del modal de creacion de usuarios nuevos*/
+/* Form field styles */
+.form-field {
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+.form-field input,
+.form-field select {
+    width: 100%;
+    margin-bottom: 0.25rem;
+}
+
+.hint {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+.dark-theme .hint {
+    color: #9ca3af;
+}
+
+.form-field input:invalid,
+.form-field select:invalid {
+    border-color: #ef4444;
+}
+
+.form-field input:invalid + .hint {
+    color: #ef4444;
+}
+
+.form-field input:valid {
+    border-color: #10b981;
+}
 /*Estilos para hacer el display de usuarios en la pantalla de admin de usuarios/*
 /* Add status badge styles */
 .status-badge {
