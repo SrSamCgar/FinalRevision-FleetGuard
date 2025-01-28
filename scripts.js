@@ -2532,12 +2532,9 @@ const CacheManager = {
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize buttons
     initializeStatusButtons();
-    initializeLoginButtons(); // Add this line
+    initializeLoginButtons();
     initializeScrollBehavior();
-    // Initial language update
     updateLanguage();
-    
-    // Initialize any other necessary components
     setupEventListeners();
 });
 function initializeScrollBehavior() {
@@ -2564,6 +2561,30 @@ function initializeScrollBehavior() {
         };
     }
 }
+/*function initializeScrollBehavior() {
+    // Add scroll lock to login screen
+    const loginScreen = document.getElementById('loginScreen');
+    
+    if (loginScreen && loginScreen.style.display === 'block') {
+        document.body.classList.add('login-screen');
+    }
+    
+    // Remove scroll lock when moving to other screens
+    document.querySelectorAll('.btn').forEach(button => {
+        button.addEventListener('click', () => {
+            document.body.classList.remove('login-screen');
+        });
+    });
+    
+    // Re-add scroll lock when returning to login
+    if (typeof backToLogin === 'function') {
+        const originalBackToLogin = backToLogin;
+        backToLogin = function() {
+            originalBackToLogin();
+            document.body.classList.add('login-screen');
+        };
+    }
+}*/
 /*function initializeScrollBehavior() {
     if (window.innerWidth <= 768) {  // Mobile devices
         document.body.classList.add('login-screen');
