@@ -2365,24 +2365,27 @@ async function analyzePhotoWithOpenAI(base64Images) {
     }
 
     // Listas predefinidas de estados y problemas
-    const validStatuses = [
-        "Condición óptima",
-        "Leve desgaste",
-        "Desgaste moderado",
-        "Requiere reparación menor",
-        "Requiere reparación urgente",
-        "No funcional"
-    ];
-
-    const validIssues = [
-        "No presenta problemas",
-        "Daño cosmético menor",
-        "Daño estructural",
-        "Problema funcional",
-        "Conexión floja",
-        "Falta de ajuste adecuado",
-        "Acumulación de suciedad"
-    ];
+	const validStatuses = [
+	    "Condición óptima",
+	    "Leve desgaste",
+	    "Desgaste moderado",
+	    "Requiere reparación menor",
+	    "Requiere reparación urgente",
+	    "No funcional",
+	    "Llanta ponchada"
+	];
+	
+	const validIssues = [
+	    "No presenta problemas",
+	    "Daño cosmético menor",
+	    "Daño estructural",
+	    "Problema funcional",
+	    "Conexión floja",
+	    "Falta de ajuste adecuado",
+	    "Acumulación de suciedad",
+	    "Pérdida total de presión",
+	    "Objeto punzante visible"
+	];
 
     try {
         const responses = await Promise.allSettled(
