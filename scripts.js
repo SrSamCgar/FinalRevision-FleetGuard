@@ -2352,7 +2352,7 @@ function togglePasswordVisibility() {
             toggleButton.textContent = '👁️'; // Cambia el ícono para indicar "mostrar"
         }
     }
-
+/*/
     // Validación en tiempo real para el campo userName
     document.getElementById('userName').addEventListener('input', function (event) {
         const input = event.target;
@@ -2362,7 +2362,7 @@ function togglePasswordVisibility() {
         } else {
             input.setCustomValidity("");
         }
-    });
+    });  */
 // Export functions to window
 Object.assign(window, {
     login,
