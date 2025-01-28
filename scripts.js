@@ -2054,6 +2054,64 @@ async function displayUsers() {
     if (!tableBody) return;
     
     try {
+        // Show loading state
+        tableBody.innerHTML = '<tr><td colspan="6" class="text-center">Loading users...</td></tr>';
+        
+        // Fetch workers from Supabase
+        const response = await fetch('/api/getWorkers');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        if (!data.workers) {
+            throw new Error('No workers data received');
+        }
+        
+        // Clear loading state
+        tableBody.innerHTML = '';
+        
+        // Display workers
+        data.workers.forEach(user => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${user.id || ''}</td>
+                <td>${user.name || ''}</td>
+                <td>${user.role || ''}</td>
+                <td>${formatDateTime(user.last_activity) || 'No activity'}</td>
+                <td><span class="status-badge ${user.status}">${user.status || 'inactive'}</span></td>
+                <td>
+                    <button class="btn btn-secondary" onclick="editUser('${user.id}')">Edit</button>
+                    <button class="btn btn-secondary" onclick="toggleUserStatus('${user.id}')">
+                        ${user.status === 'active' ? 'Deactivate' : 'Activate'}
+                    </button>
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+    } catch (error) {
+        console.error('Error fetching workers:', error);
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center text-error">
+                    Error loading users. Please try again.
+                </td>
+            </tr>
+        `;
+        showNotification('Error loading users', 'error');
+    }
+}
+
+// Add this helper function for date formatting
+function formatDateTime(dateString) {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleString();
+}
+/*async function displayUsers() {
+    const tableBody = document.getElementById('userTableBody');
+    if (!tableBody) return;
+    
+    try {
         // Fetch workers from Supabase
         const response = await fetch('/api/getWorkers');
         const data = await response.json();
@@ -2090,7 +2148,7 @@ async function displayUsers() {
         console.error('Error fetching workers:', error);
         showNotification('Error loading users', 'error');
     }
-}
+}*/
 /*function displayUsers() {
     const tableBody = document.getElementById('userTableBody');
     if (!tableBody) return;
