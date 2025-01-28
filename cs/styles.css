@@ -1,3 +1,29 @@
+/*Estilos para un overlay que no permite a los usuarios interactuar cuando se procesa la imagen con IA*/
+.processing-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    backdrop-filter: blur(5px);
+}
+
+.processing-message {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.dark-theme .processing-message {
+    background: #2d2d2d;
+    color: white;
+}
 /*Estilos para el boton de deslogueo*/
 .logout-btn {
     position: fixed;
