@@ -8,6 +8,8 @@ let currentItemStatus = null;
 let lastCaptureTime = 0;
 let inspectionStartTime = null;
 let inspectionEndTime = null;
+let currentPage = 1;
+const recordsPerPage = 10;
 //declarada al inicio para evitar errores
 async function handleImageProcessing(file) {
     if (!file) {
@@ -889,14 +891,13 @@ async function generateInspectionPDF(inspection) {
         doc.setFontSize(12);
 
         // Basic Info Section
-        const truck = trucks[inspection.truckId];
-        const basicInfo = [
-            `Inspector: ${inspection.worker}`,
-            `Vehicle ID: ${inspection.truckId}`,
-            `Model: ${truck ? truck.model : 'N/A'}`,
-            `Year: ${truck ? truck.year : 'N/A'}`,
-            `Date: ${inspection.date}`,
-        ];
+	const basicInfo = [
+	    `Inspector: ${inspection.worker}`,
+	    `Vehicle ID: ${inspection.truckId}`,
+	    `Model: ${inspection.truckModel || 'N/A'}`,
+	    `Year: ${inspection.truckYear || 'N/A'}`,
+	    `Date: ${inspection.date}`,
+	];
 
         basicInfo.forEach(info => {
             doc.text(info, 20, y);
@@ -1573,6 +1574,47 @@ async function displayRecords(page = 1) {
 
 // Add event listeners
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize pagination controls
+    const searchInput = document.getElementById('recordSearchInput');
+    const filterSelect = document.getElementById('recordFilterStatus');
+    const prevPageBtn = document.getElementById('prevPage');
+    const nextPageBtn = document.getElementById('nextPage');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(() => {
+            currentPage = 1;
+            displayRecords(currentPage);
+        }, 300));
+    }
+    
+    if (filterSelect) {
+        filterSelect.addEventListener('change', () => {
+            currentPage = 1;
+            displayRecords(currentPage);
+        });
+    }
+    
+    if (prevPageBtn) {
+        prevPageBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                displayRecords(currentPage);
+            }
+        });
+    }
+    
+    if (nextPageBtn) {
+        nextPageBtn.addEventListener('click', () => {
+            const records = filterRecords();
+            const totalPages = Math.ceil(records.length / recordsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                displayRecords(currentPage);
+            }
+        });
+    }
+});
+/*document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('recordSearchInput')?.addEventListener('input', 
         debounce(() => displayRecords(1), 300));
     document.getElementById('recordFilterStatus')?.addEventListener('change', 
@@ -1581,7 +1623,7 @@ document.addEventListener('DOMContentLoaded', () => {
         () => displayRecords(--currentPage));
     document.getElementById('nextPage')?.addEventListener('click', 
         () => displayRecords(++currentPage));
-});
+});*/
 
 async function resizeImage(file, maxWidth = 1280, maxHeight = 960, quality = 0.75) {
     return new Promise((resolve, reject) => {
@@ -2328,7 +2370,41 @@ function validateInputs() {
 
     return true;
 }
-
+//funcion para los filtros de pagina de administrador
+function filterRecords() {
+    let filteredRecords = [];
+    
+    try {
+        // Get all records
+        const records = JSON.parse(localStorage.getItem('inspectionRecords') || '[]');
+        
+        // Get filter values
+        const searchTerm = document.getElementById('recordSearchInput')?.value?.toLowerCase() || '';
+        const statusFilter = document.getElementById('recordFilterStatus')?.value || 'all';
+        
+        // Apply filters
+        filteredRecords = records.filter(record => {
+            // Search filter
+            const searchMatch = 
+                record.worker?.toLowerCase().includes(searchTerm) ||
+                record.truckId?.toLowerCase().includes(searchTerm) ||
+                record.worker_id?.toLowerCase().includes(searchTerm);
+                
+            // Status filter
+            let statusMatch = true;
+            if (statusFilter !== 'all') {
+                statusMatch = record.dynamic_status === statusFilter;
+            }
+            
+            return searchMatch && statusMatch;
+        });
+        
+        return filteredRecords;
+    } catch (error) {
+        console.error('Error filtering records:', error);
+        return [];
+    }
+}
 // Mobile Optimization Functions
 function initializeMobileOptimizations() {
     setupTouchHandling();
