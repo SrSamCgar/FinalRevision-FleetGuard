@@ -2449,8 +2449,55 @@ function editUser(userId) {
     elements.password.value = user.password;
     elements.modal.style.display = 'block';
 }
+//Funcion para crear usuarios a la base de datos
+async function handleUserSubmit(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const submitButton = form.querySelector('button[type="submit"]');
+    
+    try {
+        // Disable submit button and show loading state
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="loading-spinner"></span> Saving...';
+        
+        const userData = {
+            id: form.userId.value,
+            name: form.userName.value,
+            email: form.userEmail.value,
+            password_hash: form.userPassword.value,
+            role: form.userRole.value
+        };
 
-function handleUserSubmit(event) {
+        const response = await fetch('/api/createWorker', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(userData)
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to create user');
+        }
+
+        const data = await response.json();
+        
+        closeUserModal();
+        await displayUsers(); // Refresh the users list
+        showNotification('User created successfully', 'success');
+        
+    } catch (error) {
+        console.error('Error creating user:', error);
+        showNotification(error.message, 'error');
+    } finally {
+        // Reset button state
+        submitButton.disabled = false;
+        submitButton.textContent = 'Save';
+    }
+}
+/*function handleUserSubmit(event) {
     event.preventDefault();
     
     const userId = document.getElementById('userId').value;
@@ -2467,7 +2514,7 @@ function handleUserSubmit(event) {
     closeUserModal();
     displayUsers();
     showNotification('User saved successfully', 'success');
-}
+}*/
 
 function toggleUserStatus(userId) {
     if (!workers[userId]) return;
