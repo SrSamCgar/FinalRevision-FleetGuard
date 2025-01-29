@@ -2955,7 +2955,19 @@ function filterUsers() {
   console.log("filterUsers function called. Functionality to be implemented.");
   // Aquí agregarás la lógica para filtrar usuarios en el futuro
 }
-
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+function validateInputLength(element, maxLength) {
+        // Eliminar caracteres no numéricos
+        element.value = element.value.replace(/[^0-9]/g, '');
+        // Limitar la longitud del campo
+        if (element.value.length > maxLength) {
+            element.value = element.value.slice(0, maxLength);
+        }
+    }
+ function validateNameInput(element) {
+        // Eliminar caracteres no alfabéticos ni espacios
+        element.value = element.value.replace(/[^A-Za-z\s]/g, '');
+    }
 // Export functions to window
 Object.assign(window, {
     login,
