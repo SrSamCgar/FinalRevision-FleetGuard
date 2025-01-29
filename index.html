@@ -252,20 +252,30 @@
         <form id="userForm" onsubmit="handleUserSubmit(event)">
             <div class="input-group">
                 <div class="form-field">
-                    <input type="text" id="userId" placeholder="User ID" 
-                           pattern="\d{4,6}" 
-                           title="ID must be 4-6 digits" required>
-                    <small class="hint">ID must be 4-6 digits</small>
-                </div>
-                <div class="form-field">
-                    <input type="text" id="userName" placeholder="Full Name" 
-                           pattern="[A-Za-z\s]{3,50}" 
-                           title="Name must be 3-50 characters long, letters only" required>
-                    <small class="hint">Full name, letters only</small>
-                </div>
-                <div class="form-field">
-                    <input type="email" id="userEmail" placeholder="Email" required>
-                    <small class="hint">Valid email address</small>
+                        <!-- Campo que solo permite ingresar números entre 4 y 6 caracteres -->
+                    <input 
+                        type="text" 
+                        id="userId" 
+                        placeholder="User ID" 
+                        pattern="\d{4,6}" 
+                        maxlength="6" 
+                        oninput="validateInputLength(this, 6)" 
+                        title="ID must be 4-6 digits" 
+                        required>
+                        <small class="hint">ID must be 4-6 digits</small>
+                 </div>
+               <div class="form-field">
+                    <!-- Campo que solo permite letras y espacios, con un máximo de 50 caracteres -->
+                    <input 
+                        type="text" 
+                        id="userName" 
+                        placeholder="Full Name" 
+                        pattern="[A-Za-z\s]{1,50}" 
+                        maxlength="50" 
+                        oninput="validateNameInput(this)" 
+                        title="Name must be 1-50 characters long, letters only" 
+                        required>
+                    <small class="hint">Full name, letters only (1-50 characters).</small>
                 </div>
                 <div class="form-field">
                     <select id="userRole" required>
@@ -277,11 +287,19 @@
                     <small class="hint">Select user role</small>
                 </div>
                 <div class="form-field">
-                    <input type="password" id="userPassword" placeholder="Password" 
-                           pattern="(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,12}"
-                           title="Password must be 6-12 characters with at least one letter and one number" required>
-                    <small class="hint">6-12 chars, at least 1 letter and 1 number</small>
+                    <!-- Campo de contraseña con restricciones -->
+                    <input 
+                        type="password" 
+                        id="userPassword" 
+                        placeholder="Password" 
+                        pattern="(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{12}" 
+                        maxlength="12" 
+                        title="Password must be exactly 12 characters, with at least one letter, one number, and no spaces" 
+                        oninput="this.value = this.value.replace(/\s/g, '')" 
+                        required>
+                    <small class="hint">Exactly 12 characters, at least 1 letter, 1 number, and no spaces.</small>
                 </div>
+                
             </div>
             <button type="submit" class="btn">Save</button>
         </form>
